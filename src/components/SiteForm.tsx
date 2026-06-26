@@ -8,6 +8,88 @@ interface SiteFormProps {
   saving: boolean;
 }
 
+type CheckboxField = {
+  name: string;
+  label: string;
+  description?: string;
+};
+
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="ld-card-light p-5">
+      <legend className="px-1 text-lg font-semibold text-[var(--ink)]">{title}</legend>
+      {description && <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{description}</p>}
+      <div className="mt-5 space-y-5">{children}</div>
+    </fieldset>
+  );
+}
+
+function TextField({
+  name,
+  label,
+  type = "text",
+  required = false,
+  defaultValue,
+  placeholder,
+}: {
+  name: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+  defaultValue?: string;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={name} className="ld-label">
+        {label}
+        {required && <span className="text-[var(--primary)]"> *</span>}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type={type}
+        required={required}
+        defaultValue={defaultValue || ""}
+        placeholder={placeholder}
+        className="ld-input mt-2"
+      />
+    </div>
+  );
+}
+
+function CheckboxGroup({ fields, data }: { fields: CheckboxField[]; data: Record<string, unknown> }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {fields.map((field) => (
+        <label
+          key={field.name}
+          className="flex gap-3 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3"
+        >
+          <input
+            name={field.name}
+            type="checkbox"
+            defaultChecked={!!data[field.name]}
+            className="mt-1 size-4 accent-[var(--primary)]"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-[var(--ink)]">{field.label}</span>
+            {field.description && <span className="ld-helper mt-1 block">{field.description}</span>}
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export default function SiteForm({ initialData, onSubmit, saving }: SiteFormProps) {
   const [modelInput, setModelInput] = useState("");
   const [modelNames, setModelNames] = useState<string[]>(initialData?.modelNames || []);
@@ -56,158 +138,147 @@ export default function SiteForm({ initialData, onSubmit, saving }: SiteFormProp
   const d = initialData || {};
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-6">
-      {/* 基本信息 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">基本信息</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">站点名称 *</label>
-            <input name="name" required defaultValue={(d.name as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">站点地址 *</label>
-            <input name="url" type="url" required defaultValue={(d.url as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Section title="基本信息" description="公开目录卡片中的核心名称、入口和简介。">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField name="name" label="站点名称" required defaultValue={d.name as string} />
+          <TextField name="url" label="站点地址" type="url" required defaultValue={d.url as string} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">描述</label>
-          <textarea name="description" rows={2} defaultValue={(d.description as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
+          <label htmlFor="description" className="ld-label">
+            描述
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={(d.description as string) || ""}
+            className="ld-input mt-2 min-h-24 resize-y"
+          />
         </div>
-      </fieldset>
+      </Section>
 
-      {/* LinuxDo 相关 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">LinuxDo 相关</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">站长主页</label>
-            <input name="adminProfileUrl" type="url" defaultValue={(d.adminProfileUrl as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" placeholder="https://linux.do/u/username" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">讨论主贴</label>
-            <input name="discussionUrl" type="url" defaultValue={(d.discussionUrl as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" placeholder="https://linux.do/t/topic/..." />
-          </div>
+      <Section title="LinuxDo 相关" description="用于追溯站长主页、讨论主贴和社区来源。">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField
+            name="adminProfileUrl"
+            label="站长主页"
+            type="url"
+            defaultValue={d.adminProfileUrl as string}
+            placeholder="https://linux.do/u/username"
+          />
+          <TextField
+            name="discussionUrl"
+            label="讨论主贴"
+            type="url"
+            defaultValue={d.discussionUrl as string}
+            placeholder="https://linux.do/t/topic/..."
+          />
         </div>
-      </fieldset>
+      </Section>
 
-      {/* 签到 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">签到</legend>
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2">
-            <input name="hasCheckIn" type="checkbox" defaultChecked={!!d.hasCheckIn} />
-            <span className="text-sm">有签到</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input name="autoCheckIn" type="checkbox" defaultChecked={!!d.autoCheckIn} />
-            <span className="text-sm">支持自动签到</span>
-          </label>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">签到站地址</label>
-          <input name="checkInUrl" type="url" defaultValue={(d.checkInUrl as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-        </div>
-      </fieldset>
+      <Section title="签到" description="记录站点是否需要签到，以及是否支持自动签到。">
+        <CheckboxGroup
+          data={d}
+          fields={[
+            { name: "hasCheckIn", label: "有签到", description: "公开卡片会显示签到能力。" },
+            { name: "autoCheckIn", label: "支持自动签到", description: "用于区分手动和自动签到站点。" },
+          ]}
+        />
+        <TextField name="checkInUrl" label="签到站地址" type="url" defaultValue={d.checkInUrl as string} />
+      </Section>
 
-      {/* 功能支持 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">功能支持</legend>
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2">
-            <input name="supportsClaudeCode" type="checkbox" defaultChecked={!!d.supportsClaudeCode} />
-            <span className="text-sm">Claude Code</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input name="supportsCodex" type="checkbox" defaultChecked={!!d.supportsCodex} />
-            <span className="text-sm">Codex</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input name="supportsImmersiveTranslation" type="checkbox" defaultChecked={!!d.supportsImmersiveTranslation} />
-            <span className="text-sm">沉浸式翻译</span>
-          </label>
-        </div>
-      </fieldset>
+      <Section title="功能支持" description="标注站点可用于哪些 AI 工具或使用场景。">
+        <CheckboxGroup
+          data={d}
+          fields={[
+            { name: "supportsClaudeCode", label: "Claude Code" },
+            { name: "supportsCodex", label: "Codex" },
+            { name: "supportsImmersiveTranslation", label: "沉浸式翻译" },
+          ]}
+        />
+      </Section>
 
-      {/* 模型 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">支持的模型</legend>
-        <div className="flex gap-2">
+      <Section title="支持的模型" description="输入模型名称后按回车或点击添加，保存时会同步模型列表。">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
             value={modelInput}
             onChange={(e) => setModelInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addModel(); } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addModel();
+              }
+            }}
             placeholder="输入模型名称，回车添加"
-            className="flex-1 rounded border border-gray-300 px-3 py-2"
+            className="ld-input flex-1"
           />
-          <button type="button" onClick={addModel} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+          <button type="button" onClick={addModel} className="ld-button-secondary">
             添加
           </button>
         </div>
         {modelNames.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {modelNames.map((name) => (
-              <span key={name} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+              <span key={name} className="ld-badge bg-[rgba(250,249,245,0.72)]">
                 {name}
-                <button type="button" onClick={() => removeModel(name)} className="text-blue-600 hover:text-blue-900">&times;</button>
+                <button
+                  type="button"
+                  onClick={() => removeModel(name)}
+                  className="ml-2 rounded-full text-[var(--primary-active)] hover:text-[var(--error)]"
+                  aria-label={`移除模型 ${name}`}
+                >
+                  ×
+                </button>
               </span>
             ))}
           </div>
         )}
-      </fieldset>
+      </Section>
 
-      {/* 附属站点 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">附属站点</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">福利站</label>
-            <input name="welfareUrl" type="url" defaultValue={(d.welfareUrl as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">状态监控站</label>
-            <input name="statusUrl" type="url" defaultValue={(d.statusUrl as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" />
-          </div>
+      <Section title="附属站点" description="补充福利站、状态监控站等相关入口。">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField name="welfareUrl" label="福利站" type="url" defaultValue={d.welfareUrl as string} />
+          <TextField name="statusUrl" label="状态监控站" type="url" defaultValue={d.statusUrl as string} />
         </div>
-      </fieldset>
+      </Section>
 
-      {/* 限速 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">限速</legend>
-        <label className="flex items-center gap-2">
-          <input name="hasRateLimit" type="checkbox" defaultChecked={!!d.hasRateLimit} />
-          <span className="text-sm">有限速</span>
-        </label>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">限速说明</label>
-          <input name="rateLimitInfo" defaultValue={(d.rateLimitInfo as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" placeholder="如：每分钟3次请求" />
+      <Section title="限制说明" description="把限速和活跃度规则写在卡片上，减少误用。">
+        <CheckboxGroup
+          data={d}
+          fields={[
+            { name: "hasRateLimit", label: "有限速", description: "站点存在频率、额度或并发限制。" },
+            { name: "hasActivityRequirement", label: "有活跃度要求", description: "站点对账号活跃度有要求。" },
+          ]}
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <TextField
+            name="rateLimitInfo"
+            label="限速说明"
+            defaultValue={d.rateLimitInfo as string}
+            placeholder="如：每分钟 3 次请求"
+          />
+          <TextField
+            name="activityRequirementInfo"
+            label="活跃度说明"
+            defaultValue={d.activityRequirementInfo as string}
+            placeholder="如：30 天不活跃删号"
+          />
         </div>
-      </fieldset>
+      </Section>
 
-      {/* 活跃度要求 */}
-      <fieldset className="space-y-4">
-        <legend className="text-lg font-semibold">活跃度要求</legend>
-        <label className="flex items-center gap-2">
-          <input name="hasActivityRequirement" type="checkbox" defaultChecked={!!d.hasActivityRequirement} />
-          <span className="text-sm">有活跃度要求</span>
-        </label>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">活跃度说明</label>
-          <input name="activityRequirementInfo" defaultValue={(d.activityRequirementInfo as string) || ""} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2" placeholder="如：30天不活跃删号" />
-        </div>
-      </fieldset>
+      <Section title="发布状态">
+        <CheckboxGroup
+          data={{ ...d, isActive: d.isActive !== false }}
+          fields={[{ name: "isActive", label: "站点活跃", description: "只有活跃站点会出现在公开目录中。" }]}
+        />
+      </Section>
 
-      {/* 状态 */}
-      <fieldset>
-        <label className="flex items-center gap-2">
-          <input name="isActive" type="checkbox" defaultChecked={d.isActive !== false} />
-          <span className="text-sm font-medium">站点活跃</span>
-        </label>
-      </fieldset>
-
-      <button type="submit" disabled={saving} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
-        {saving ? "保存中..." : "保存"}
-      </button>
+      <div className="sticky bottom-4 z-10 rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-3 shadow-[var(--shadow-soft)] backdrop-blur">
+        <button type="submit" disabled={saving} className="ld-button-primary w-full">
+          {saving ? "保存中..." : "保存"}
+        </button>
+      </div>
     </form>
   );
 }

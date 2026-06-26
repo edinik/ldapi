@@ -32,14 +32,17 @@ export default function EditSiteClient({ site }: Props) {
   }
 
   return (
-    <div>
+    <div className="space-y-5">
       <SiteForm initialData={site} onSubmit={handleSubmit} saving={saving} />
-      <button
-        onClick={handleDelete}
-        className="mt-4 text-red-600 hover:text-red-800 text-sm"
-      >
-        删除此站点
-      </button>
+      <div className="ld-card-light flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
+        <div>
+          <p className="font-semibold text-[var(--ink)]">危险操作</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">删除后该站点会从后台和公开目录中移除。</p>
+        </div>
+        <button onClick={handleDelete} className="ld-button-danger">
+          删除此站点
+        </button>
+      </div>
     </div>
   );
 }
