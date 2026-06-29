@@ -57,6 +57,81 @@ npm run dev
 
 打开 `http://localhost:3000` 查看公开目录，打开 `http://localhost:3000/login` 进入后台登录页。
 
+## Docker 部署
+
+项目提供 `Dockerfile` 和 `docker-compose.yml`，适合直接部署到 VPS。容器内监听 `3000` 端口，SQLite 数据库通过 `./data:/app/data` 挂载到宿主机，避免容器重建后数据丢失。
+
+### 1. 准备 VPS
+
+在服务器上安装 Docker 和 Docker Compose Plugin，然后把项目代码放到服务器目录中，例如：
+
+```bash
+git clone <your-repo-url> ldapi
+cd ldapi
+```
+
+### 2. 配置环境变量
+
+在项目根目录创建 `.env`，可以从示例文件复制：
+
+```bash
+cp .env.example .env
+```
+
+然后修改 `.env`：
+
+```bash
+APP_PORT=3000
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-this-password
+```
+
+- `APP_PORT`：宿主机暴露端口，默认 `3000`。
+- `ADMIN_USERNAME`：首次启动时创建的管理员用户名，默认 `admin`。
+- `ADMIN_PASSWORD`：首次启动时创建的管理员密码，必须显式设置。
+
+### 3. 构建并启动
+
+```bash
+docker compose up -d --build
+```
+
+首次启动时入口脚本会自动执行：
+
+```bash
+npm run db:push
+npm run seed -- "$ADMIN_USERNAME" "$ADMIN_PASSWORD"
+```
+
+随后访问：
+
+- 公开目录：`http://<server-ip>:3000`
+- 后台登录：`http://<server-ip>:3000/login`
+
+如果修改了 `APP_PORT`，访问地址中的端口也需要同步调整。
+
+### 4. 查看日志与维护
+
+```bash
+docker compose logs -f app
+docker compose restart app
+docker compose down
+```
+
+数据库文件保存在宿主机项目目录的 `data/sqlite.db`。迁移服务器或备份数据时，重点备份 `data/` 目录。
+
+如果管理员账号已经存在，`npm run seed` 不会覆盖旧密码。需要重置密码时可进入容器执行：
+
+```bash
+docker compose exec app npx tsx scripts/reset-password.ts
+```
+
+该脚本会把 `admin` 用户密码重置为 `admin`，重置后请尽快改成安全密码或调整脚本后再执行。
+
+### 5. 反向代理建议
+
+生产环境建议用 Nginx、Caddy 或 VPS 面板把域名反向代理到 `127.0.0.1:3000`，并配置 HTTPS。反向代理后可以把 `APP_PORT` 改为仅供本机或防火墙内访问的端口。
+
 ## 常用脚本
 
 ```bash

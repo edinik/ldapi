@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+mkdir -p /app/data
+
+if [ -z "$ADMIN_PASSWORD" ]; then
+  echo "ADMIN_PASSWORD is required. Set it in .env before starting the container." >&2
+  exit 1
+fi
+
+npm run db:push
+npm run seed -- "${ADMIN_USERNAME:-admin}" "$ADMIN_PASSWORD"
+
+exec "$@"
