@@ -133,6 +133,28 @@ button:disabled {
   color: var(--on-dark);
 }
 
+.ld-stat-card {
+  border: 1px solid rgba(250, 249, 245, 0.06);
+  border-radius: 8px;
+  background: var(--surface-dark-elevated);
+  padding: 1rem;
+}
+
+.ld-stat-value {
+  color: var(--on-dark);
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ld-stat-label {
+  margin-top: 0.5rem;
+  color: #d8d4ca;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .ld-button-primary {
   display: inline-flex;
   min-height: 2.75rem;

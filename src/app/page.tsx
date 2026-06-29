@@ -99,9 +99,9 @@ export default async function HomePage() {
                 ["Claude Code", claudeCodeCount],
                 ["Codex", codexCount],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-lg bg-[var(--surface-dark-elevated)] p-4">
-                  <p className="ld-display text-3xl text-[var(--on-dark)]">{value}</p>
-                  <p className="mt-1 text-xs text-[var(--on-dark-soft)]">{label}</p>
+                <div key={label} className="ld-stat-card">
+                  <p className="ld-stat-value">{value}</p>
+                  <p className="ld-stat-label">{label}</p>
                 </div>
               ))}
             </div>
