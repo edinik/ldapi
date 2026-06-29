@@ -1,25 +1,8 @@
 import { db } from "@/db";
+import { SiteDirectory, type SiteDirectoryItem } from "@/components/SiteDirectory";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const capabilityLabels = [
-  { key: "hasCheckIn", label: "签到", tone: "success" },
-  { key: "autoCheckIn", label: "自动签到", tone: "success" },
-  { key: "supportsClaudeCode", label: "Claude Code", tone: "dark" },
-  { key: "supportsCodex", label: "Codex", tone: "dark" },
-  { key: "supportsImmersiveTranslation", label: "沉浸式翻译", tone: "warning" },
-  { key: "hasRateLimit", label: "限速", tone: "warning" },
-  { key: "hasActivityRequirement", label: "活跃要求", tone: "danger" },
-] as const;
-
-function badgeClass(tone: string) {
-  if (tone === "success") return "ld-badge ld-badge-success";
-  if (tone === "warning") return "ld-badge ld-badge-warning";
-  if (tone === "danger") return "ld-badge ld-badge-danger";
-  if (tone === "dark") return "ld-badge ld-badge-dark";
-  return "ld-badge";
-}
 
 export default async function HomePage() {
   const allSites = await db.query.sites.findMany({
@@ -32,8 +15,25 @@ export default async function HomePage() {
     orderBy: (sites, { desc }) => [desc(sites.createdAt)],
   });
 
-  const siteList = allSites.map((site) => ({
-    ...site,
+  const siteList: SiteDirectoryItem[] = allSites.map((site) => ({
+    id: site.id,
+    name: site.name,
+    url: site.url,
+    description: site.description,
+    adminProfileUrl: site.adminProfileUrl,
+    discussionUrl: site.discussionUrl,
+    hasCheckIn: site.hasCheckIn,
+    autoCheckIn: site.autoCheckIn,
+    checkInUrl: site.checkInUrl,
+    supportsClaudeCode: site.supportsClaudeCode,
+    supportsCodex: site.supportsCodex,
+    supportsImmersiveTranslation: site.supportsImmersiveTranslation,
+    welfareUrl: site.welfareUrl,
+    statusUrl: site.statusUrl,
+    hasRateLimit: site.hasRateLimit,
+    rateLimitInfo: site.rateLimitInfo,
+    hasActivityRequirement: site.hasActivityRequirement,
+    activityRequirementInfo: site.activityRequirementInfo,
     models: site.siteModels.map((sm) => sm.model.name),
   }));
 
@@ -148,87 +148,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {siteList.length === 0 ? (
-            <div className="ld-card-light p-10 text-center">
-              <p className="ld-display text-3xl text-[var(--ink)]">暂无站点数据</p>
-              <p className="mt-3 text-[var(--muted)]">登录后台后可以添加第一条公益站记录。</p>
-            </div>
-          ) : (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {siteList.map((site) => {
-                const links: { label: string; url: string }[] = [
-                  { label: "站长主页", url: site.adminProfileUrl || "" },
-                  { label: "讨论帖", url: site.discussionUrl || "" },
-                  { label: "签到站", url: site.checkInUrl || "" },
-                  { label: "福利站", url: site.welfareUrl || "" },
-                  { label: "状态监控", url: site.statusUrl || "" },
-                ].filter((link) => link.url.length > 0);
-
-                return (
-                  <article key={site.id} className="ld-card flex min-h-full flex-col p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-[var(--ink)]">
-                          <a href={site.url} target="_blank" rel="noopener noreferrer" className="ld-link">
-                            {site.name}
-                          </a>
-                        </h3>
-                        <p className="mt-1 text-xs text-[var(--muted-soft)] break-all">{site.url}</p>
-                      </div>
-                      <a href={site.url} target="_blank" rel="noopener noreferrer" className="ld-button-secondary shrink-0 px-3 py-2 text-xs">
-                        访问
-                      </a>
-                    </div>
-
-                    {site.description && (
-                      <p className="mt-4 text-sm leading-6 text-[var(--body)]">{site.description}</p>
-                    )}
-
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {capabilityLabels.map(({ key, label, tone }) => {
-                        if (!site[key]) return null;
-                        return (
-                          <span key={key} className={badgeClass(tone)}>
-                            {label}
-                          </span>
-                        );
-                      })}
-                    </div>
-
-                    {site.models.length > 0 && (
-                      <div className="mt-5">
-                        <p className="text-xs font-semibold text-[var(--muted)]">支持模型</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {site.models.map((model) => (
-                            <span key={model} className="ld-badge bg-[rgba(250,249,245,0.7)]">
-                              {model}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {(site.rateLimitInfo || site.activityRequirementInfo) && (
-                      <div className="mt-5 space-y-2 rounded-lg bg-[rgba(250,249,245,0.58)] p-3 text-xs leading-5 text-[var(--muted)]">
-                        {site.rateLimitInfo && <p>限速：{site.rateLimitInfo}</p>}
-                        {site.activityRequirementInfo && <p>活跃要求：{site.activityRequirementInfo}</p>}
-                      </div>
-                    )}
-
-                    {links.length > 0 && (
-                      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-[var(--hairline-soft)] pt-5 text-sm">
-                        {links.map((link) => (
-                          <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" className="ld-link">
-                            {link.label}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
+          <SiteDirectory sites={siteList} />
         </section>
       </main>
     </div>
