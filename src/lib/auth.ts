@@ -1,24 +1,8 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { db } from "@/db";
 import { sessions, adminUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
-
-export function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
-}
-
-export function verifyPassword(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(":");
-  const hashBuffer = Buffer.from(hash, "hex");
-  const testBuffer = scryptSync(password, salt, 64);
-  return timingSafeEqual(hashBuffer, testBuffer);
-}
-
-export function generateSessionId(): string {
-  return randomBytes(32).toString("hex");
-}
+export { hashPassword, verifyPassword, generateSessionId } from "./password";
+import { generateSessionId } from "./password";
 
 export async function createSession(userId: number): Promise<string> {
   const id = generateSessionId();

@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { adminUsers } from "../src/db/schema";
-import { hashPassword } from "../src/lib/auth";
+import { hashPassword } from "../src/lib/password";
 import { eq } from "drizzle-orm";
 
 const sqlite = new Database("data/sqlite.db");
