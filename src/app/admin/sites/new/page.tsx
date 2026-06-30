@@ -1,26 +1,15 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import SiteForm from "@/components/SiteForm";
 import Link from "next/link";
+import { db } from "@/db";
+import { requireAdmin } from "@/lib/session";
+import NewSiteClient from "./NewSiteClient";
 
-export default function NewSitePage() {
-  const router = useRouter();
-  const [saving, setSaving] = useState(false);
-
-  async function handleSubmit(data: Record<string, unknown>) {
-    setSaving(true);
-    const res = await fetch("/api/sites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) {
-      router.push("/admin");
-    }
-    setSaving(false);
-  }
+export default async function NewSitePage() {
+  await requireAdmin();
+  const availableModels = await db.query.models.findMany({
+    where: (models, { ne }) => ne(models.isActive, false),
+    columns: { name: true, developer: true, modelId: true },
+    orderBy: (models, { asc }) => [asc(models.developer), asc(models.name)],
+  });
 
   return (
     <main className="ld-page min-h-screen py-8">
@@ -34,7 +23,7 @@ export default function NewSitePage() {
             录入新的 AI 公益站入口、模型支持、签到方式和使用限制，公开目录会实时读取活跃站点。
           </p>
         </header>
-        <SiteForm onSubmit={handleSubmit} saving={saving} />
+        <NewSiteClient availableModels={availableModels} />
       </div>
     </main>
   );

@@ -1,11 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { filterAvailableSiteModels, type AvailableSiteModelOption } from "@/lib/site-model-options";
+import { parseReasoningEffortLevels, reasoningEffortLevels, type ReasoningEffortLevel } from "@/lib/site-model-capabilities";
+
+type SiteModelFormItem = {
+  name: string;
+  supportsToolCallingOverride: boolean | null;
+  supportsVisionOverride: boolean | null;
+  supportsTemperatureControlOverride: boolean | null;
+  supportsReasoningOverride: boolean | null;
+  reasoningEffortLevelsOverride: ReasoningEffortLevel[] | null;
+  supportsWebSearchOverride: boolean | null;
+};
 
 interface SiteFormProps {
-  initialData?: Record<string, unknown> & { modelNames?: string[] };
+  initialData?: Record<string, unknown> & { modelNames?: string[]; siteModels?: unknown[] };
   onSubmit: (data: Record<string, unknown>) => void;
   saving: boolean;
+  availableModels?: AvailableSiteModelOption[];
 }
 
 type CheckboxField = {
@@ -90,20 +103,174 @@ function CheckboxGroup({ fields, data }: { fields: CheckboxField[]; data: Record
   );
 }
 
-export default function SiteForm({ initialData, onSubmit, saving }: SiteFormProps) {
-  const [modelInput, setModelInput] = useState("");
-  const [modelNames, setModelNames] = useState<string[]>(initialData?.modelNames || []);
+function normalizeOverride(value: unknown): boolean | null {
+  if (value === true || value === false) return value;
+  return null;
+}
 
-  function addModel() {
-    const name = modelInput.trim();
-    if (name && !modelNames.includes(name)) {
-      setModelNames([...modelNames, name]);
+function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteModelFormItem[] {
+  if (Array.isArray(initialData?.siteModels)) {
+    return initialData.siteModels
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const record = item as Record<string, unknown>;
+        const model = record.model as Record<string, unknown> | undefined;
+        const name = typeof model?.name === "string" ? model.name : typeof record.name === "string" ? record.name : "";
+        if (!name) return null;
+
+        return {
+          name,
+          supportsToolCallingOverride: normalizeOverride(record.supportsToolCallingOverride),
+          supportsVisionOverride: normalizeOverride(record.supportsVisionOverride),
+          supportsTemperatureControlOverride: normalizeOverride(record.supportsTemperatureControlOverride),
+          supportsReasoningOverride: normalizeOverride(record.supportsReasoningOverride),
+          reasoningEffortLevelsOverride: Array.isArray(record.reasoningEffortLevelsOverride)
+            ? parseReasoningEffortLevels(record.reasoningEffortLevelsOverride.map(String))
+            : typeof record.reasoningEffortLevelsOverride === "string"
+              ? parseReasoningEffortLevels(record.reasoningEffortLevelsOverride)
+              : null,
+          supportsWebSearchOverride: normalizeOverride(record.supportsWebSearchOverride),
+        };
+      })
+      .filter((item): item is SiteModelFormItem => item !== null);
+  }
+
+  return (initialData?.modelNames || []).map((name) => ({
+    name,
+    supportsToolCallingOverride: null,
+    supportsVisionOverride: null,
+    supportsTemperatureControlOverride: null,
+    supportsReasoningOverride: null,
+    reasoningEffortLevelsOverride: null,
+    supportsWebSearchOverride: null,
+  }));
+}
+
+function overrideToSelectValue(value: boolean | null) {
+  if (value === true) return "true";
+  if (value === false) return "false";
+  return "inherit";
+}
+
+function selectValueToOverride(value: string): boolean | null {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
+function CapabilityOverrideSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean | null;
+  onChange: (value: boolean | null) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="ld-filter-label">{label}</span>
+      <select
+        value={overrideToSelectValue(value)}
+        onChange={(event) => onChange(selectValueToOverride(event.target.value))}
+        className="ld-input mt-2"
+      >
+        <option value="inherit">继承模型默认</option>
+        <option value="true">本站支持</option>
+        <option value="false">本站不支持</option>
+      </select>
+    </label>
+  );
+}
+
+function ReasoningEffortOverride({
+  value,
+  onChange,
+}: {
+  value: ReasoningEffortLevel[] | null;
+  onChange: (value: ReasoningEffortLevel[] | null) => void;
+}) {
+  const enabled = value !== null;
+  const selected = value ?? [];
+
+  function toggle(level: ReasoningEffortLevel) {
+    if (!enabled) return;
+    if (selected.includes(level)) {
+      onChange(selected.filter((item) => item !== level));
+    } else {
+      onChange([...selected, level]);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.58)] p-3">
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => onChange(event.target.checked ? [] : null)}
+          className="mt-1 size-4 accent-[var(--primary)]"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-[var(--ink)]">覆盖推理强度</span>
+          <span className="ld-helper mt-1 block">不勾选时继承模型默认；勾选但不选强度表示本站不可调强度。</span>
+        </span>
+      </label>
+      {enabled && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {reasoningEffortLevels.map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={selected.includes(level) ? "ld-filter-chip ld-filter-chip-active" : "ld-filter-chip"}
+              onClick={() => toggle(level)}
+              aria-pressed={selected.includes(level)}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function SiteForm({ initialData, onSubmit, saving, availableModels = [] }: SiteFormProps) {
+  const [modelInput, setModelInput] = useState("");
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [siteModelItems, setSiteModelItems] = useState<SiteModelFormItem[]>(() => getInitialSiteModels(initialData));
+  const modelOptions = filterAvailableSiteModels(
+    availableModels,
+    modelInput,
+    siteModelItems.map((item) => item.name),
+  ).slice(0, 12);
+
+  function addModel(modelName = modelInput) {
+    const name = modelName.trim();
+    if (name && !siteModelItems.some((item) => item.name === name)) {
+      setSiteModelItems([
+        ...siteModelItems,
+        {
+          name,
+          supportsToolCallingOverride: null,
+          supportsVisionOverride: null,
+          supportsTemperatureControlOverride: null,
+          supportsReasoningOverride: null,
+          reasoningEffortLevelsOverride: null,
+          supportsWebSearchOverride: null,
+        },
+      ]);
     }
     setModelInput("");
+    setModelDropdownOpen(false);
   }
 
   function removeModel(name: string) {
-    setModelNames(modelNames.filter((m) => m !== name));
+    setSiteModelItems(siteModelItems.filter((item) => item.name !== name));
+  }
+
+  function updateModelOverride<K extends keyof Omit<SiteModelFormItem, "name">>(name: string, key: K, value: SiteModelFormItem[K]) {
+    setSiteModelItems((current) => current.map((item) => (item.name === name ? { ...item, [key]: value } : item)));
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -129,7 +296,7 @@ export default function SiteForm({ initialData, onSubmit, saving }: SiteFormProp
       hasActivityRequirement: form.get("hasActivityRequirement") === "on",
       activityRequirementInfo: form.get("activityRequirementInfo") || null,
       isActive: form.get("isActive") === "on",
-      modelNames,
+      siteModels: siteModelItems,
     };
 
     onSubmit(data);
@@ -199,38 +366,110 @@ export default function SiteForm({ initialData, onSubmit, saving }: SiteFormProp
         />
       </Section>
 
-      <Section title="支持的模型" description="输入模型名称后按回车或点击添加，保存时会同步模型列表。">
+      <Section title="支持的模型" description="搜索并选择已录入模型；也可以输入新模型名称后添加。">
         <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={modelInput}
-            onChange={(e) => setModelInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addModel();
-              }
-            }}
-            placeholder="输入模型名称，回车添加"
-            className="ld-input flex-1"
-          />
-          <button type="button" onClick={addModel} className="ld-button-secondary">
+          <div className="relative flex-1">
+            <input
+              value={modelInput}
+              onChange={(e) => {
+                setModelInput(e.target.value);
+                setModelDropdownOpen(true);
+              }}
+              onFocus={() => setModelDropdownOpen(true)}
+              onBlur={() => window.setTimeout(() => setModelDropdownOpen(false), 120)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addModel();
+                }
+              }}
+              placeholder="搜索模型名称、开发者或模型 ID"
+              className="ld-input flex-1"
+              role="combobox"
+              aria-expanded={modelDropdownOpen}
+              aria-controls="site-model-options"
+              autoComplete="off"
+            />
+            {modelDropdownOpen && (modelInput.trim() || modelOptions.length > 0) && (
+              <div
+                id="site-model-options"
+                className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
+                role="listbox"
+              >
+                {modelOptions.length > 0 ? (
+                  modelOptions.map((model) => (
+                    <button
+                      key={model.name}
+                      type="button"
+                      className="flex min-h-12 w-full flex-col items-start justify-center rounded-md px-3 text-left hover:bg-[var(--surface-card)]"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => addModel(model.name)}
+                      role="option"
+                      aria-selected="false"
+                    >
+                      <span className="text-sm font-semibold text-[var(--body-strong)]">{model.name}</span>
+                      <span className="mt-0.5 text-xs text-[var(--muted)]">
+                        {[model.developer, model.modelId].filter(Boolean).join(" / ") || "未填写开发者或模型 ID"}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-3 py-2 text-sm text-[var(--muted)]">没有匹配模型，可直接添加为新模型名称。</p>
+                )}
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={() => addModel()} className="ld-button-secondary">
             添加
           </button>
         </div>
-        {modelNames.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {modelNames.map((name) => (
-              <span key={name} className="ld-badge bg-[rgba(250,249,245,0.72)]">
-                {name}
-                <button
-                  type="button"
-                  onClick={() => removeModel(name)}
-                  className="ml-2 rounded-full text-[var(--primary-active)] hover:text-[var(--error)]"
-                  aria-label={`移除模型 ${name}`}
-                >
-                  ×
-                </button>
-              </span>
+        {siteModelItems.length > 0 && (
+          <div className="grid gap-3">
+            {siteModelItems.map((item) => (
+              <div key={item.name} className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-4">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="font-semibold text-[var(--ink)]">{item.name}</p>
+                    <p className="ld-helper mt-1">按站点覆盖模型能力；未设置时继承模型管理中的默认能力。</p>
+                  </div>
+                  <button type="button" onClick={() => removeModel(item.name)} className="ld-button-danger min-h-0 px-3 py-2 text-xs">
+                    移除
+                  </button>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                  <CapabilityOverrideSelect
+                    label="工具调用"
+                    value={item.supportsToolCallingOverride}
+                    onChange={(value) => updateModelOverride(item.name, "supportsToolCallingOverride", value)}
+                  />
+                  <CapabilityOverrideSelect
+                    label="视觉"
+                    value={item.supportsVisionOverride}
+                    onChange={(value) => updateModelOverride(item.name, "supportsVisionOverride", value)}
+                  />
+                  <CapabilityOverrideSelect
+                    label="温度"
+                    value={item.supportsTemperatureControlOverride}
+                    onChange={(value) => updateModelOverride(item.name, "supportsTemperatureControlOverride", value)}
+                  />
+                  <CapabilityOverrideSelect
+                    label="推理"
+                    value={item.supportsReasoningOverride}
+                    onChange={(value) => updateModelOverride(item.name, "supportsReasoningOverride", value)}
+                  />
+                  <CapabilityOverrideSelect
+                    label="联网"
+                    value={item.supportsWebSearchOverride}
+                    onChange={(value) => updateModelOverride(item.name, "supportsWebSearchOverride", value)}
+                  />
+                </div>
+                <div className="mt-3">
+                  <ReasoningEffortOverride
+                    value={item.reasoningEffortLevelsOverride}
+                    onChange={(value) => updateModelOverride(item.name, "reasoningEffortLevelsOverride", value)}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         )}

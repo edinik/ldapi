@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { sites, siteModels, models } from "@/db/schema";
+import { sites, siteModels } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/session";
+import { getSiteModelPayloads, syncSiteModels } from "@/lib/site-model-payload";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAuth();
@@ -11,22 +12,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const siteId = parseInt(id);
   const body = await req.json();
-  const { modelNames, ...siteData } = body;
+  const { modelNames, siteModels: siteModelPayloads, ...siteData } = body;
+  const modelsToSync = getSiteModelPayloads({ modelNames, siteModels: siteModelPayloads });
 
   await db
     .update(sites)
     .set({ ...siteData, updatedAt: new Date() })
     .where(eq(sites.id, siteId));
 
-  if (modelNames && Array.isArray(modelNames)) {
+  if (Array.isArray(siteModelPayloads) || Array.isArray(modelNames)) {
     await db.delete(siteModels).where(eq(siteModels.siteId, siteId));
-    for (const name of modelNames) {
-      let [model] = await db.select().from(models).where(eq(models.name, name));
-      if (!model) {
-        [model] = await db.insert(models).values({ name }).returning();
-      }
-      await db.insert(siteModels).values({ siteId, modelId: model.id });
-    }
+    await syncSiteModels(siteId, modelsToSync);
   }
 
   return NextResponse.json({ success: true });

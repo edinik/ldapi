@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import SiteForm from "@/components/SiteForm";
+import type { AvailableSiteModelOption } from "@/lib/site-model-options";
 
 interface Props {
   site: Record<string, unknown> & { id: number; modelNames: string[] };
+  availableModels: AvailableSiteModelOption[];
 }
 
-export default function EditSiteClient({ site }: Props) {
+export default function EditSiteClient({ site, availableModels }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -33,7 +35,7 @@ export default function EditSiteClient({ site }: Props) {
 
   return (
     <div className="space-y-5">
-      <SiteForm initialData={site} onSubmit={handleSubmit} saving={saving} />
+      <SiteForm initialData={site} onSubmit={handleSubmit} saving={saving} availableModels={availableModels} />
       <div className="ld-card-light flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
         <div>
           <p className="font-semibold text-[var(--ink)]">危险操作</p>

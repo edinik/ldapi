@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { type CapabilityKey, type DirectorySite, filterSites } from "@/lib/site-directory-filter";
+import { FilterSelect } from "@/components/FilterSelect";
 
 const capabilityLabels: { key: CapabilityKey; label: string; tone: string }[] = [
   { key: "hasCheckIn", label: "签到", tone: "success" },
@@ -21,6 +22,10 @@ export type SiteDirectoryItem = DirectorySite & {
   statusUrl: string | null;
   rateLimitInfo: string | null;
   activityRequirementInfo: string | null;
+  modelCapabilities: {
+    name: string;
+    capabilities: string[];
+  }[];
 };
 
 function badgeClass(tone: string) {
@@ -47,6 +52,10 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
   const modelOptions = useMemo(
     () => Array.from(new Set(sites.flatMap((site) => site.models))).sort((a, b) => a.localeCompare(b)),
     [sites],
+  );
+  const modelFilterOptions = useMemo(
+    () => [{ value: "", label: "全部模型" }, ...modelOptions.map((model) => ({ value: model, label: model }))],
+    [modelOptions],
   );
 
   const filteredSites = useMemo(
@@ -86,17 +95,7 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
             />
           </label>
 
-          <label className="block">
-            <span className="ld-filter-label">模型</span>
-            <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} className="ld-input mt-2">
-              <option value="">全部模型</option>
-              {modelOptions.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FilterSelect label="模型" value={selectedModel} options={modelFilterOptions} onChange={setSelectedModel} />
         </div>
 
         <div className="mt-4">
@@ -183,11 +182,19 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
                 {site.models.length > 0 && (
                   <div className="mt-5">
                     <p className="text-xs font-semibold text-[var(--muted)]">支持模型</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {site.models.map((model) => (
-                        <span key={model} className="ld-badge bg-[rgba(250,249,245,0.7)]">
-                          {model}
-                        </span>
+                    <div className="mt-2 grid gap-2">
+                      {site.modelCapabilities.map((model) => (
+                        <div key={model.name} className="rounded-lg bg-[rgba(250,249,245,0.58)] p-3">
+                          <p className="text-sm font-semibold text-[var(--ink)]">{model.name}</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {model.capabilities.length === 0 && <span className="text-xs text-[var(--muted-soft)]">未标注</span>}
+                            {model.capabilities.map((capability) => (
+                              <span key={capability} className="ld-badge bg-[rgba(250,249,245,0.7)]">
+                                {capability}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

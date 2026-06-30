@@ -1,5 +1,8 @@
 import { db } from "@/db";
 import { SiteDirectory, type SiteDirectoryItem } from "@/components/SiteDirectory";
+import { ModelOverview } from "@/components/ModelOverview";
+import { getHomepageModels, type ModelDisplayItem } from "@/lib/model-display";
+import { getSiteModelCapabilityLabels, parseReasoningEffortLevels, resolveSiteModelCapabilities } from "@/lib/site-model-capabilities";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -14,33 +17,54 @@ export default async function HomePage() {
     },
     orderBy: (sites, { desc }) => [desc(sites.createdAt)],
   });
+  const allModels = await db.query.models.findMany({
+    orderBy: (models, { asc }) => [asc(models.developer), asc(models.name)],
+  });
+  const modelList = allModels.map((model) => ({
+    ...model,
+    reasoningEffortLevels: parseReasoningEffortLevels(model.reasoningEffortLevels),
+  })) as ModelDisplayItem[];
 
-  const siteList: SiteDirectoryItem[] = allSites.map((site) => ({
-    id: site.id,
-    name: site.name,
-    url: site.url,
-    description: site.description,
-    adminProfileUrl: site.adminProfileUrl,
-    discussionUrl: site.discussionUrl,
-    hasCheckIn: site.hasCheckIn,
-    autoCheckIn: site.autoCheckIn,
-    checkInUrl: site.checkInUrl,
-    supportsClaudeCode: site.supportsClaudeCode,
-    supportsCodex: site.supportsCodex,
-    supportsImmersiveTranslation: site.supportsImmersiveTranslation,
-    welfareUrl: site.welfareUrl,
-    statusUrl: site.statusUrl,
-    hasRateLimit: site.hasRateLimit,
-    rateLimitInfo: site.rateLimitInfo,
-    hasActivityRequirement: site.hasActivityRequirement,
-    activityRequirementInfo: site.activityRequirementInfo,
-    models: site.siteModels.map((sm) => sm.model.name),
-  }));
+  const siteList: SiteDirectoryItem[] = allSites.map((site) => {
+    const modelCapabilities = site.siteModels.map((sm) => {
+      const capabilities = resolveSiteModelCapabilities(
+        { ...sm.model, reasoningEffortLevels: parseReasoningEffortLevels(sm.model.reasoningEffortLevels) },
+        { ...sm, reasoningEffortLevelsOverride: sm.reasoningEffortLevelsOverride == null ? null : parseReasoningEffortLevels(sm.reasoningEffortLevelsOverride) },
+      );
+      const labels = getSiteModelCapabilityLabels(capabilities);
+
+      return { name: sm.model.name, capabilities: labels };
+    });
+
+    return {
+      id: site.id,
+      name: site.name,
+      url: site.url,
+      description: site.description,
+      adminProfileUrl: site.adminProfileUrl,
+      discussionUrl: site.discussionUrl,
+      hasCheckIn: site.hasCheckIn,
+      autoCheckIn: site.autoCheckIn,
+      checkInUrl: site.checkInUrl,
+      supportsClaudeCode: site.supportsClaudeCode,
+      supportsCodex: site.supportsCodex,
+      supportsImmersiveTranslation: site.supportsImmersiveTranslation,
+      welfareUrl: site.welfareUrl,
+      statusUrl: site.statusUrl,
+      hasRateLimit: site.hasRateLimit,
+      rateLimitInfo: site.rateLimitInfo,
+      hasActivityRequirement: site.hasActivityRequirement,
+      activityRequirementInfo: site.activityRequirementInfo,
+      models: modelCapabilities.map((model) => model.name),
+      modelCapabilities,
+    };
+  });
 
   const uniqueModelCount = new Set(siteList.flatMap((site) => site.models)).size;
   const claudeCodeCount = siteList.filter((site) => site.supportsClaudeCode).length;
   const codexCount = siteList.filter((site) => site.supportsCodex).length;
   const checkInCount = siteList.filter((site) => site.hasCheckIn).length;
+  const homepageModels = getHomepageModels(modelList);
 
   return (
     <div className="ld-page">
@@ -150,6 +174,23 @@ export default async function HomePage() {
 
           <SiteDirectory sites={siteList} />
         </section>
+
+        {homepageModels.length > 0 && (
+          <section className="border-t border-[var(--hairline)] bg-[var(--surface-soft)] py-14 lg:py-20">
+            <div className="ld-container">
+              <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div>
+                  <p className="ld-badge mb-4 w-fit">模型速览</p>
+                  <h2 className="ld-section-title">已收录模型</h2>
+                </div>
+                <p className="max-w-xl text-sm leading-6 text-[var(--muted)]">
+                  展示后台标记为主页展示的模型资料，方便快速比较能力、模态、上下文和价格。
+                </p>
+              </div>
+              <ModelOverview models={homepageModels} />
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { sites, siteModels, models } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { sites } from "@/db/schema";
 import { requireAuth } from "@/lib/session";
+import { getSiteModelPayloads, syncSiteModels } from "@/lib/site-model-payload";
 
 export async function GET() {
   const allSites = await db.query.sites.findMany({
@@ -28,18 +28,13 @@ export async function POST(req: NextRequest) {
   if (authError) return authError;
 
   const body = await req.json();
-  const { modelNames, ...siteData } = body;
+  const { modelNames, siteModels: siteModelPayloads, ...siteData } = body;
+  const modelsToSync = getSiteModelPayloads({ modelNames, siteModels: siteModelPayloads });
 
   const [newSite] = await db.insert(sites).values(siteData).returning();
 
-  if (modelNames && Array.isArray(modelNames) && modelNames.length > 0) {
-    for (const name of modelNames) {
-      let [model] = await db.select().from(models).where(eq(models.name, name));
-      if (!model) {
-        [model] = await db.insert(models).values({ name }).returning();
-      }
-      await db.insert(siteModels).values({ siteId: newSite.id, modelId: model.id });
-    }
+  if (modelsToSync.length > 0) {
+    await syncSiteModels(newSite.id, modelsToSync);
   }
 
   return NextResponse.json(newSite, { status: 201 });
