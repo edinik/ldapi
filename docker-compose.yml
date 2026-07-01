@@ -6,7 +6,7 @@ services:
     container_name: ldapi
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
