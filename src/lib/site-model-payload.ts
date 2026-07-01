@@ -11,6 +11,7 @@ export type SiteModelPayload = {
   supportsReasoningOverride?: boolean | null;
   reasoningEffortLevelsOverride?: string[] | null;
   supportsWebSearchOverride?: boolean | null;
+  rating?: string | null;
 };
 
 function nullableBoolean(value: unknown) {
@@ -38,6 +39,7 @@ function normalizeSiteModelPayload(value: unknown): SiteModelPayload | null {
     supportsReasoningOverride: nullableBoolean(record.supportsReasoningOverride),
     reasoningEffortLevelsOverride: Array.isArray(record.reasoningEffortLevelsOverride) ? record.reasoningEffortLevelsOverride.map(String) : null,
     supportsWebSearchOverride: nullableBoolean(record.supportsWebSearchOverride),
+    rating: typeof record.rating === "string" ? record.rating || null : null,
   };
 }
 
@@ -71,6 +73,7 @@ export async function syncSiteModels(siteId: number, payloads: SiteModelPayload[
         ? serializeReasoningEffortLevels(payload.reasoningEffortLevelsOverride)
         : null,
       supportsWebSearchOverride: payload.supportsWebSearchOverride ?? null,
+      rating: payload.rating ?? null,
     });
   }
 }

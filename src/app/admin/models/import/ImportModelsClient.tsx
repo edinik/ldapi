@@ -33,9 +33,11 @@ export default function ImportModelsClient({ template }: { template: string }) {
   const [upsert, setUpsert] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [importSuccess, setImportSuccess] = useState(false);
 
   async function submitImport(dryRun: boolean) {
     setLoading(true);
+    setImportSuccess(false);
     const res = await fetch("/api/models/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,6 +48,7 @@ export default function ImportModelsClient({ template }: { template: string }) {
     setLoading(false);
 
     if (res.ok && !dryRun) {
+      setImportSuccess(true);
       router.refresh();
     }
   }
@@ -95,6 +98,15 @@ export default function ImportModelsClient({ template }: { template: string }) {
             请访问模型官网和官方文档，整理模型信息为右侧 JSON 模板格式。字段缺失时填 null 或 false；价格统一使用美元 / M tokens；日期使用 YYYY-MM-DD；不要输出 Markdown，只输出 JSON。
           </div>
         </section>
+
+        {importSuccess && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+            <p className="font-semibold text-green-700">导入成功</p>
+            <p className="mt-1 text-sm text-green-600">
+              共新增 {result?.summary?.created ?? 0} 个模型，更新 {result?.summary?.updated ?? 0} 个模型，跳过 {result?.summary?.skipped ?? 0} 个模型。
+            </p>
+          </div>
+        )}
 
         <section className="ld-card-light p-5">
           <h2 className="text-lg font-semibold text-[var(--ink)]">预检结果</h2>

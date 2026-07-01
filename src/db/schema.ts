@@ -82,6 +82,7 @@ export const siteModels = sqliteTable("site_models", {
   supportsReasoningOverride: integer("supports_reasoning_override", { mode: "boolean" }),
   reasoningEffortLevelsOverride: text("reasoning_effort_levels_override"),
   supportsWebSearchOverride: integer("supports_web_search_override", { mode: "boolean" }),
+  rating: text("rating"),
 });
 
 // Relations

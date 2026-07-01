@@ -83,9 +83,28 @@ function ModelTitle({ model }: { model: ModelDisplayItem }) {
   );
 }
 
+type SortOption = "releaseDate-desc" | "releaseDate-asc" | "name-asc";
+
+const sortOptions = [
+  { value: "releaseDate-desc", label: "发布日期（最新）" },
+  { value: "releaseDate-asc", label: "发布日期（最早）" },
+  { value: "name-asc", label: "名称 A-Z" },
+];
+
+function sortModels(items: ModelDisplayItem[], sort: SortOption) {
+  return [...items].sort((a, b) => {
+    if (sort === "name-asc") return a.name.localeCompare(b.name);
+    const dateA = a.releaseDate || "";
+    const dateB = b.releaseDate || "";
+    if (sort === "releaseDate-desc") return dateB.localeCompare(dateA);
+    return dateA.localeCompare(dateB);
+  });
+}
+
 export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
   const [query, setQuery] = useState("");
   const [developer, setDeveloper] = useState("");
+  const [sort, setSort] = useState<SortOption>("releaseDate-desc");
   const [selectedCapabilities, setSelectedCapabilities] = useState<ModelCapabilityKey[]>([]);
 
   const developerOptions = useMemo(
@@ -101,8 +120,8 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
   );
 
   const filteredModels = useMemo(
-    () => filterModels(models, { query, developer, capabilities: selectedCapabilities }),
-    [developer, models, query, selectedCapabilities],
+    () => sortModels(filterModels(models, { query, developer, capabilities: selectedCapabilities }), sort),
+    [developer, models, query, selectedCapabilities, sort],
   );
 
   const hasFilters = query.trim().length > 0 || developer.length > 0 || selectedCapabilities.length > 0;
@@ -118,7 +137,7 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
   return (
     <div className="space-y-6">
       <div className="ld-filter-panel">
-        <div className="grid gap-3 lg:grid-cols-[1fr_14rem]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_14rem_14rem]">
           <label className="block">
             <span className="ld-filter-label">搜索</span>
             <input
@@ -131,6 +150,7 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
           </label>
 
           <FilterSelect label="开发者" value={developer} options={developerFilterOptions} onChange={setDeveloper} />
+          <FilterSelect label="排序" value={sort} options={sortOptions} onChange={(v) => setSort(v as SortOption)} />
         </div>
 
         <div className="mt-4">
@@ -225,6 +245,12 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
                     <p className="text-xs font-semibold text-[var(--muted)]">最大输出</p>
                     <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{formatTokenLimit(model.maxOutputTokens)}</p>
                   </div>
+                  {model.releaseDate && (
+                    <div>
+                      <p className="text-xs font-semibold text-[var(--muted)]">发布日期</p>
+                      <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{model.releaseDate}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-5 grid gap-2 text-xs leading-5 text-[var(--muted)]">

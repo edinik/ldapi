@@ -25,6 +25,7 @@ export type SiteDirectoryItem = DirectorySite & {
   modelCapabilities: {
     name: string;
     capabilities: string[];
+    rating: string | null;
   }[];
 };
 
@@ -33,6 +34,15 @@ function badgeClass(tone: string) {
   if (tone === "warning") return "ld-badge ld-badge-warning";
   if (tone === "danger") return "ld-badge ld-badge-danger";
   if (tone === "dark") return "ld-badge ld-badge-dark";
+  return "ld-badge";
+}
+
+function ratingBadgeClass(rating: string) {
+  if (rating === "夯") return "ld-badge ld-badge-success";
+  if (rating === "顶级") return "ld-badge ld-badge-dark";
+  if (rating === "人上人") return "ld-badge";
+  if (rating === "NPC") return "ld-badge ld-badge-warning";
+  if (rating === "拉") return "ld-badge ld-badge-danger";
   return "ld-badge";
 }
 
@@ -185,9 +195,12 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
                     <div className="mt-2 grid gap-2">
                       {site.modelCapabilities.map((model) => (
                         <div key={model.name} className="rounded-lg bg-[rgba(250,249,245,0.58)] p-3">
-                          <p className="text-sm font-semibold text-[var(--ink)]">{model.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-[var(--ink)]">{model.name}</p>
+                            {model.rating && <span className={ratingBadgeClass(model.rating)}>{model.rating}</span>}
+                          </div>
                           <div className="mt-2 flex flex-wrap gap-1.5">
-                            {model.capabilities.length === 0 && <span className="text-xs text-[var(--muted-soft)]">未标注</span>}
+                            {model.capabilities.length === 0 && !model.rating && <span className="text-xs text-[var(--muted-soft)]">未标注</span>}
                             {model.capabilities.map((capability) => (
                               <span key={capability} className="ld-badge bg-[rgba(250,249,245,0.7)]">
                                 {capability}

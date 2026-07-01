@@ -267,6 +267,69 @@ function IconCombobox({ defaultValue }: { defaultValue?: unknown }) {
   );
 }
 
+const typeOptions = ["对话", "嵌入", "重排序", "图像生成", "视频生成", "语音生成"];
+
+function TypeSelect({ defaultValue }: { defaultValue?: string }) {
+  const [value, setValue] = useState(defaultValue || "");
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <label className="ld-label">类型</label>
+      <input type="hidden" name="type" value={value} />
+      <button
+        type="button"
+        className="ld-input mt-2 flex items-center justify-between text-left font-semibold"
+        onClick={() => setOpen((current) => !current)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="truncate">{value || "未选择"}</span>
+        <span className="ml-3 text-[var(--muted)]">⌄</span>
+      </button>
+      {open && (
+        <div
+          className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
+          role="listbox"
+        >
+          <button
+            type="button"
+            className={
+              !value
+                ? "flex min-h-10 w-full items-center rounded-md bg-[var(--surface-card)] px-3 text-left text-sm font-semibold text-[var(--ink)]"
+                : "flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
+            }
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => { setValue(""); setOpen(false); }}
+            role="option"
+            aria-selected={!value}
+          >
+            未选择
+          </button>
+          {typeOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={
+                option === value
+                  ? "flex min-h-10 w-full items-center rounded-md bg-[var(--surface-card)] px-3 text-left text-sm font-semibold text-[var(--ink)]"
+                  : "flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
+              }
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => { setValue(option); setOpen(false); }}
+              role="option"
+              aria-selected={option === value}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CheckboxGroup({ fields, data }: { fields: CheckboxField[]; data: ModelFormData }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -391,7 +454,7 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
               helper="主页点击模型名称会打开这个链接。"
             />
             <TextField name="group" label="分组" defaultValue={d.group} placeholder="claude-opus" />
-            <TextField name="type" label="类型" defaultValue={d.type} placeholder="对话" />
+            <TypeSelect defaultValue={getStringValue(d.type)} />
             <div>
               <label htmlFor="notes" className="ld-label">
                 备注

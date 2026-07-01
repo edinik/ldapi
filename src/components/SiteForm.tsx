@@ -12,7 +12,10 @@ type SiteModelFormItem = {
   supportsReasoningOverride: boolean | null;
   reasoningEffortLevelsOverride: ReasoningEffortLevel[] | null;
   supportsWebSearchOverride: boolean | null;
+  rating: string | null;
 };
+
+const ratingOptions = ["夯", "顶级", "人上人", "NPC", "拉"];
 
 interface SiteFormProps {
   initialData?: Record<string, unknown> & { modelNames?: string[]; siteModels?: unknown[] };
@@ -130,6 +133,7 @@ function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteM
               ? parseReasoningEffortLevels(record.reasoningEffortLevelsOverride)
               : null,
           supportsWebSearchOverride: normalizeOverride(record.supportsWebSearchOverride),
+          rating: typeof record.rating === "string" ? record.rating || null : null,
         };
       })
       .filter((item): item is SiteModelFormItem => item !== null);
@@ -143,6 +147,7 @@ function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteM
     supportsReasoningOverride: null,
     reasoningEffortLevelsOverride: null,
     supportsWebSearchOverride: null,
+    rating: null,
   }));
 }
 
@@ -158,6 +163,71 @@ function selectValueToOverride(value: string): boolean | null {
   return null;
 }
 
+function MiniSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value) ?? options[0];
+
+  return (
+    <div className="relative block">
+      <span className="ld-filter-label">{label}</span>
+      <button
+        type="button"
+        className="ld-input mt-2 flex w-full items-center justify-between text-left text-sm font-semibold"
+        onClick={() => setOpen((c) => !c)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="truncate">{selected.label}</span>
+        <span className="ml-2 text-[var(--muted)]">⌄</span>
+      </button>
+      {open && (
+        <div
+          className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
+          role="listbox"
+        >
+          {options.map((option) => {
+            const active = option.value === value;
+            return (
+              <button
+                key={option.value || "__empty"}
+                type="button"
+                className={
+                  active
+                    ? "flex min-h-9 w-full items-center rounded-md bg-[var(--surface-card)] px-3 text-left text-sm font-semibold text-[var(--ink)]"
+                    : "flex min-h-9 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
+                }
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onChange(option.value); setOpen(false); }}
+                role="option"
+                aria-selected={active}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const capabilityOverrideOptions = [
+  { value: "inherit", label: "继承模型默认" },
+  { value: "true", label: "本站支持" },
+  { value: "false", label: "本站不支持" },
+];
+
 function CapabilityOverrideSelect({
   label,
   value,
@@ -168,18 +238,12 @@ function CapabilityOverrideSelect({
   onChange: (value: boolean | null) => void;
 }) {
   return (
-    <label className="block">
-      <span className="ld-filter-label">{label}</span>
-      <select
-        value={overrideToSelectValue(value)}
-        onChange={(event) => onChange(selectValueToOverride(event.target.value))}
-        className="ld-input mt-2"
-      >
-        <option value="inherit">继承模型默认</option>
-        <option value="true">本站支持</option>
-        <option value="false">本站不支持</option>
-      </select>
-    </label>
+    <MiniSelect
+      label={label}
+      value={overrideToSelectValue(value)}
+      options={capabilityOverrideOptions}
+      onChange={(v) => onChange(selectValueToOverride(v))}
+    />
   );
 }
 
@@ -258,6 +322,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
           supportsReasoningOverride: null,
           reasoningEffortLevelsOverride: null,
           supportsWebSearchOverride: null,
+          rating: null,
         },
       ]);
     }
@@ -436,7 +501,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
                     移除
                   </button>
                 </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
                   <CapabilityOverrideSelect
                     label="工具调用"
                     value={item.supportsToolCallingOverride}
@@ -461,6 +526,19 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
                     label="联网"
                     value={item.supportsWebSearchOverride}
                     onChange={(value) => updateModelOverride(item.name, "supportsWebSearchOverride", value)}
+                  />
+                  <MiniSelect
+                    label="评分"
+                    value={item.rating || ""}
+                    options={[
+                      { value: "", label: "未评分" },
+                      { value: "夯", label: "夯" },
+                      { value: "顶级", label: "顶级" },
+                      { value: "人上人", label: "人上人" },
+                      { value: "NPC", label: "NPC" },
+                      { value: "拉", label: "拉" },
+                    ]}
+                    onChange={(v) => updateModelOverride(item.name, "rating", v || null)}
                   />
                 </div>
                 <div className="mt-3">

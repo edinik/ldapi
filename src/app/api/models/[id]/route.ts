@@ -32,11 +32,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const { id } = await params;
   const modelId = parseInt(id);
+  const hard = req.nextUrl.searchParams.get("hard") === "true";
 
-  await db
-    .update(models)
-    .set({ isActive: false, showOnHome: false, updatedAt: new Date() })
-    .where(eq(models.id, modelId));
+  if (hard) {
+    await db.delete(models).where(eq(models.id, modelId));
+  } else {
+    await db
+      .update(models)
+      .set({ isActive: false, showOnHome: false, updatedAt: new Date() })
+      .where(eq(models.id, modelId));
+  }
 
   return NextResponse.json({ success: true });
 }
