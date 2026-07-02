@@ -5,7 +5,6 @@ import { requireAdmin } from "@/lib/session";
 import { createTotpUri, generateTotpQrCode } from "@/lib/totp";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
-import Image from "next/image";
 
 const errorMessages: Record<string, string> = {
   "invalid-code": "验证码不正确，请确认手机时间同步后重试。",
@@ -94,7 +93,7 @@ export default async function AdminSecurityPage({
               <div className="flex flex-col items-center gap-4 rounded-lg border border-[var(--hairline)] bg-white p-6">
                 <p className="text-sm font-medium text-[var(--ink)]">使用验证器扫描二维码</p>
                 {qrCodeDataUrl && (
-                  <Image
+                  <img
                     src={qrCodeDataUrl}
                     alt="TOTP QR Code"
                     width={256}

@@ -11,6 +11,8 @@ export default async function LoginPage() {
     redirect("/admin");
   }
 
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
   return (
     <main className="ld-page grid min-h-screen place-items-center px-4 py-10">
       <section className="w-full max-w-md rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-8 shadow-[var(--shadow-soft)]">
@@ -32,7 +34,7 @@ export default async function LoginPage() {
           </p>
         </div>
 
-        <LoginForm />
+        <LoginForm turnstileSiteKey={turnstileSiteKey} />
       </section>
     </main>
   );

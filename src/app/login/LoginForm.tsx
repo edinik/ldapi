@@ -4,12 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 
-export function LoginForm() {
+interface LoginFormProps {
+  turnstileSiteKey?: string;
+}
+
+export function LoginForm({ turnstileSiteKey }: LoginFormProps) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const turnstileTokenRef = useRef<string>("");
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,10 +89,10 @@ export function LoginForm() {
         />
         <p className="mt-2 text-xs leading-5 text-[var(--muted)]">启用两步验证后填写 6 位动态验证码。</p>
       </div>
-      {siteKey && (
+      {turnstileSiteKey && (
         <div className="flex justify-center">
           <Turnstile
-            siteKey={siteKey}
+            siteKey={turnstileSiteKey}
             onSuccess={(token) => {
               turnstileTokenRef.current = token;
             }}
