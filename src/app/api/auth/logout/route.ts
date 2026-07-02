@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { deleteSession } from "@/lib/auth";
 
-export async function POST() {
+export async function POST(req: Request) {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("session")?.value;
 
@@ -11,5 +11,5 @@ export async function POST() {
     cookieStore.delete("session");
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.redirect(new URL("/login", req.url), { status: 303 });
 }

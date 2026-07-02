@@ -15,6 +15,13 @@
       "when": 1782952945131,
       "tag": "0001_opposite_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782958392902,
+      "tag": "0002_tiresome_hedge_knight",
+      "breakpoints": true
     }
   ]
 }

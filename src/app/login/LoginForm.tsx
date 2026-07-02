@@ -13,23 +13,30 @@ export function LoginForm() {
     setLoading(true);
     setError("");
 
-    const formData = new FormData(e.currentTarget);
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: formData.get("username"),
-        password: formData.get("password"),
-      }),
-    });
+    try {
+      const formData = new FormData(e.currentTarget);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.get("username"),
+          password: formData.get("password"),
+          totpCode: formData.get("totpCode"),
+        }),
+      });
 
-    if (res.ok) {
-      router.push("/admin");
-    } else {
-      const data = await res.json();
-      setError(data.error || "登录失败");
+      if (res.ok) {
+        router.push("/admin");
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "登录失败，请稍后重试");
+    } catch {
+      setError("登录失败，请稍后重试");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -59,6 +66,21 @@ export function LoginForm() {
           autoComplete="current-password"
           className="ld-input mt-2"
         />
+      </div>
+      <div>
+        <label htmlFor="totpCode" className="ld-label">
+          TOTP 验证码
+        </label>
+        <input
+          id="totpCode"
+          name="totpCode"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9 ]{6,8}"
+          autoComplete="one-time-code"
+          className="ld-input mt-2"
+        />
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">启用两步验证后填写 6 位动态验证码。</p>
       </div>
       {error && (
         <p className="rounded-lg border border-[rgba(198,69,69,0.24)] bg-[rgba(198,69,69,0.08)] px-3 py-2 text-sm text-[var(--error)]">

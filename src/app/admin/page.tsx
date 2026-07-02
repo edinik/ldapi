@@ -37,6 +37,9 @@ export default async function AdminPage() {
             <Link href="/admin/models" className="ld-button-secondary">
               模型管理
             </Link>
+            <Link href="/admin/security" className="ld-button-secondary">
+              安全设置
+            </Link>
             <Link href="/admin/sites/new" className="ld-button-primary">
               添加站点
             </Link>
