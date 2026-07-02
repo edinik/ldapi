@@ -4,6 +4,7 @@ import { type SiteDirectoryItem } from "@/components/SiteDirectory";
 import { HomeTabs } from "@/components/HomeTabs";
 import { getHomepageModels, type ModelDisplayItem } from "@/lib/model-display";
 import { parseStoredResourceTags } from "@/lib/resource-payload";
+import { requireAdmin } from "@/lib/session";
 import { getSiteModelCapabilityLabels, parseReasoningEffortLevels, resolveSiteModelCapabilities } from "@/lib/site-model-capabilities";
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
@@ -11,6 +12,8 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  await requireAdmin();
+
   const allSites = await db.query.sites.findMany({
     where: (sites, { eq }) => eq(sites.isActive, true),
     with: {
@@ -93,7 +96,7 @@ export default async function HomePage() {
               <p className="text-xs text-[var(--muted)]">AI 公益站导航</p>
             </div>
           </Link>
-          <Link href="/login" className="ld-button-secondary">
+          <Link href="/admin" className="ld-button-secondary">
             管理入口
           </Link>
         </div>
