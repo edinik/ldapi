@@ -8,7 +8,6 @@ if [ -z "$ADMIN_PASSWORD" ]; then
   exit 1
 fi
 
-npm run db:push
-npm run seed -- "${ADMIN_USERNAME:-admin}" "$ADMIN_PASSWORD"
+node /app/scripts/docker-bootstrap.mjs
 
 exec "$@"

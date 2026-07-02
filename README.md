@@ -96,12 +96,7 @@ ADMIN_PASSWORD=change-this-password
 docker compose up -d --build
 ```
 
-首次启动时入口脚本会自动执行：
-
-```bash
-npm run db:push
-npm run seed -- "$ADMIN_USERNAME" "$ADMIN_PASSWORD"
-```
+首次启动时入口脚本会自动初始化 SQLite 表结构，并按 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 创建管理员账号。账号已存在时不会覆盖旧密码。
 
 随后访问：
 
