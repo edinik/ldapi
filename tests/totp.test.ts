@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   createTotpUri,
   generateTotpCode,
+  generateTotpQrCode,
   isValidBase32Secret,
   normalizeTotpCode,
   verifyTotpCode,
@@ -37,5 +38,14 @@ describe("totp helpers", () => {
       createTotpUri({ issuer: "LDAPI", accountName: "admin", secret: rfcSecret }),
       "otpauth://totp/LDAPI:admin?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=LDAPI&algorithm=SHA1&digits=6&period=30",
     );
+  });
+
+  it("generates a QR code data URL from a TOTP URI", async () => {
+    const totpUri = createTotpUri({ issuer: "LDAPI", accountName: "admin", secret: rfcSecret });
+    const qrCode = await generateTotpQrCode(totpUri);
+
+    assert.equal(typeof qrCode, "string");
+    assert.equal(qrCode.startsWith("data:image/png;base64,"), true);
+    assert.ok(qrCode.length > 100);
   });
 });

@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const turnstileTokenRef = useRef<string>("");
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,6 +25,7 @@ export function LoginForm() {
           username: formData.get("username"),
           password: formData.get("password"),
           totpCode: formData.get("totpCode"),
+          turnstileToken: turnstileTokenRef.current,
         }),
       });
 
@@ -82,6 +86,23 @@ export function LoginForm() {
         />
         <p className="mt-2 text-xs leading-5 text-[var(--muted)]">启用两步验证后填写 6 位动态验证码。</p>
       </div>
+      {siteKey && (
+        <div className="flex justify-center">
+          <Turnstile
+            siteKey={siteKey}
+            onSuccess={(token) => {
+              turnstileTokenRef.current = token;
+            }}
+            onError={() => {
+              setError("验证码加载失败，请刷新页面重试");
+            }}
+            options={{
+              theme: "light",
+              size: "normal",
+            }}
+          />
+        </div>
+      )}
       {error && (
         <p className="rounded-lg border border-[rgba(198,69,69,0.24)] bg-[rgba(198,69,69,0.08)] px-3 py-2 text-sm text-[var(--error)]">
           {error}

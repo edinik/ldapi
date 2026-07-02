@@ -2,9 +2,10 @@ import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
 import { disableTotp, confirmTotpSetup, generateTotpSetup } from "./actions";
 import { requireAdmin } from "@/lib/session";
-import { createTotpUri } from "@/lib/totp";
+import { createTotpUri, generateTotpQrCode } from "@/lib/totp";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import Image from "next/image";
 
 const errorMessages: Record<string, string> = {
   "invalid-code": "验证码不正确，请确认手机时间同步后重试。",
@@ -37,6 +38,7 @@ export default async function AdminSecurityPage({
   const totpUri = user.pendingTotpSecret
     ? createTotpUri({ issuer: "LDAPI", accountName: user.username, secret: user.pendingTotpSecret })
     : null;
+  const qrCodeDataUrl = totpUri ? await generateTotpQrCode(totpUri) : null;
   const error = params?.error ? errorMessages[params.error] : null;
   const success = params?.success ? successMessages[params.success] : null;
 
@@ -89,9 +91,25 @@ export default async function AdminSecurityPage({
 
           {totpUri && (
             <div className="mt-6 space-y-5">
+              <div className="flex flex-col items-center gap-4 rounded-lg border border-[var(--hairline)] bg-white p-6">
+                <p className="text-sm font-medium text-[var(--ink)]">使用验证器扫描二维码</p>
+                {qrCodeDataUrl && (
+                  <Image
+                    src={qrCodeDataUrl}
+                    alt="TOTP QR Code"
+                    width={256}
+                    height={256}
+                    className="rounded-lg border border-[var(--hairline)]"
+                  />
+                )}
+                <p className="text-xs text-[var(--muted)]">
+                  支持 Google Authenticator、Microsoft Authenticator 等应用
+                </p>
+              </div>
+
               <div>
                 <label htmlFor="totpSecret" className="ld-label">
-                  密钥
+                  密钥（手动输入）
                 </label>
                 <input
                   id="totpSecret"
@@ -99,19 +117,27 @@ export default async function AdminSecurityPage({
                   value={user.pendingTotpSecret ?? ""}
                   className="ld-input mt-2 font-mono text-sm"
                 />
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  如果无法扫描二维码，可以手动输入此密钥
+                </p>
               </div>
 
-              <div>
-                <label htmlFor="totpUri" className="ld-label">
-                  otpauth URI
-                </label>
-                <textarea
-                  id="totpUri"
-                  readOnly
-                  value={totpUri}
-                  className="ld-input mt-2 min-h-28 font-mono text-xs leading-5"
-                />
-              </div>
+              <details className="rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-4">
+                <summary className="cursor-pointer text-sm font-medium text-[var(--ink)]">
+                  高级选项
+                </summary>
+                <div className="mt-4">
+                  <label htmlFor="totpUri" className="ld-label">
+                    otpauth URI
+                  </label>
+                  <textarea
+                    id="totpUri"
+                    readOnly
+                    value={totpUri}
+                    className="ld-input mt-2 min-h-28 font-mono text-xs leading-5"
+                  />
+                </div>
+              </details>
 
               <form action={confirmTotpSetup} className="space-y-4">
                 <div>
@@ -127,7 +153,11 @@ export default async function AdminSecurityPage({
                     required
                     autoComplete="one-time-code"
                     className="ld-input mt-2"
+                    placeholder="请输入 6 位验证码"
                   />
+                  <p className="mt-1 text-xs text-[var(--muted)]">
+                    请输入验证器应用中显示的 6 位数字
+                  </p>
                 </div>
                 <button type="submit" className="ld-button-primary">
                   确认启用

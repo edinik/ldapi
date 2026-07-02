@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminUser, verifyPassword, createSession } from "@/lib/auth";
 import { verifyTotpCode } from "@/lib/totp";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
-  const { username, password, totpCode } = await req.json();
+  const { username, password, totpCode, turnstileToken } = await req.json();
 
   if (!username || !password) {
     return NextResponse.json({ error: "缺少用户名或密码" }, { status: 400 });
+  }
+
+  if (process.env.TURNSTILE_SECRET_KEY && !turnstileToken) {
+    return NextResponse.json({ error: "缺少验证码" }, { status: 400 });
+  }
+
+  if (turnstileToken && !(await verifyTurnstileToken(turnstileToken))) {
+    return NextResponse.json({ error: "验证码验证失败，请重试" }, { status: 400 });
   }
 
   const user = await getAdminUser(username);

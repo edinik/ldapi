@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import qrcode from "qrcode";
 
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const TOTP_PERIOD_SECONDS = 30;
@@ -58,6 +59,14 @@ export function createTotpUri({
   });
 
   return `otpauth://totp/${label}?${params.toString()}`;
+}
+
+export async function generateTotpQrCode(totpUri: string): Promise<string> {
+  return qrcode.toDataURL(totpUri, {
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: 256,
+  });
 }
 
 function generateHotpCode(secret: string, counter: number): string {
