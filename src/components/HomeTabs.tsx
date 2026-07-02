@@ -3,11 +3,21 @@
 import { useState } from "react";
 import { SiteDirectory, type SiteDirectoryItem } from "@/components/SiteDirectory";
 import { ModelOverview } from "@/components/ModelOverview";
+import { ResourceDirectory } from "@/components/ResourceDirectory";
 import type { ModelDisplayItem } from "@/lib/model-display";
+import type { DirectoryResource } from "@/lib/resource-directory-filter";
 
-type Tab = "sites" | "models";
+type Tab = "sites" | "models" | "resources";
 
-export function HomeTabs({ sites, models }: { sites: SiteDirectoryItem[]; models: ModelDisplayItem[] }) {
+export function HomeTabs({
+  sites,
+  models,
+  resources,
+}: {
+  sites: SiteDirectoryItem[];
+  models: ModelDisplayItem[];
+  resources: DirectoryResource[];
+}) {
   const [tab, setTab] = useState<Tab>("sites");
 
   return (
@@ -33,10 +43,22 @@ export function HomeTabs({ sites, models }: { sites: SiteDirectoryItem[]; models
         >
           模型 ({models.length})
         </button>
+        <button
+          type="button"
+          className={tab === "resources"
+            ? "border-b-2 border-[var(--ink)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
+            : "border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-[var(--muted)] hover:text-[var(--body)]"
+          }
+          onClick={() => setTab("resources")}
+        >
+          资源 ({resources.length})
+        </button>
       </div>
 
       <div className="pt-8">
-        {tab === "sites" ? <SiteDirectory sites={sites} /> : <ModelOverview models={models} />}
+        {tab === "sites" && <SiteDirectory sites={sites} />}
+        {tab === "models" && <ModelOverview models={models} />}
+        {tab === "resources" && <ResourceDirectory resources={resources} />}
       </div>
     </div>
   );

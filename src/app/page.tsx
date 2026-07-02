@@ -1,8 +1,11 @@
 import { db } from "@/db";
+import { resources } from "@/db/schema";
 import { type SiteDirectoryItem } from "@/components/SiteDirectory";
 import { HomeTabs } from "@/components/HomeTabs";
 import { getHomepageModels, type ModelDisplayItem } from "@/lib/model-display";
+import { parseStoredResourceTags } from "@/lib/resource-payload";
 import { getSiteModelCapabilityLabels, parseReasoningEffortLevels, resolveSiteModelCapabilities } from "@/lib/site-model-capabilities";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +23,9 @@ export default async function HomePage() {
   const allModels = await db.query.models.findMany({
     orderBy: (models, { asc }) => [asc(models.developer), asc(models.name)],
   });
+  const allResources = await db.select().from(resources)
+    .where(eq(resources.isActive, true))
+    .orderBy(desc(resources.createdAt));
   const modelList = allModels.map((model) => ({
     ...model,
     reasoningEffortLevels: parseReasoningEffortLevels(model.reasoningEffortLevels),
@@ -61,6 +67,18 @@ export default async function HomePage() {
   });
 
   const homepageModels = getHomepageModels(modelList);
+  const resourceList = allResources.map((resource) => ({
+    id: resource.id,
+    type: resource.type === "tool" ? "tool" as const : "tutorial" as const,
+    title: resource.title,
+    description: resource.description,
+    tags: parseStoredResourceTags(resource.tags),
+    githubUrl: resource.githubUrl,
+    officialUrl: resource.officialUrl,
+    demoUrl: resource.demoUrl,
+    linuxdoUrl: resource.linuxdoUrl,
+    recommendation: resource.recommendation,
+  }));
 
   return (
     <div className="ld-page">
@@ -82,7 +100,7 @@ export default async function HomePage() {
       </header>
 
       <main className="ld-container py-10 lg:py-14">
-          <HomeTabs sites={siteList} models={homepageModels} />
+          <HomeTabs sites={siteList} models={homepageModels} resources={resourceList} />
       </main>
     </div>
   );

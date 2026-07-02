@@ -31,6 +31,9 @@ export default async function AdminPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link href="/admin/resources" className="ld-button-secondary">
+              资源管理
+            </Link>
             <Link href="/admin/models" className="ld-button-secondary">
               模型管理
             </Link>

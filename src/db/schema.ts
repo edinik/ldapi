@@ -72,6 +72,22 @@ export const models = sqliteTable("models", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
+export const resources = sqliteTable("resources", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull().default("tutorial"),
+  title: text("title").notNull(),
+  description: text("description"),
+  tags: text("tags").notNull().default("[]"),
+  githubUrl: text("github_url"),
+  officialUrl: text("official_url"),
+  demoUrl: text("demo_url"),
+  linuxdoUrl: text("linuxdo_url"),
+  recommendation: text("recommendation"),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
 export const siteModels = sqliteTable("site_models", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   siteId: integer("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
