@@ -93,6 +93,47 @@ describe("AI model import helpers", () => {
     assert.equal(requests[0].url, "https://api.example.com/v1/chat/completions");
     assert.equal(requests[0].init.method, "POST");
     assert.equal((requests[0].init.headers as Record<string, string>).Authorization, "Bearer test-key");
-    assert.match(String(requests[0].init.body), /gpt-test/);
+    assert.equal((requests[0].init.headers as Record<string, string>).Accept, "text/event-stream");
+
+    const requestBody = JSON.parse(String(requests[0].init.body));
+    assert.equal(requestBody.model, "gpt-test");
+    assert.equal(requestBody.stream, true);
+    assert.deepEqual(requestBody.stream_options, { include_usage: true });
+    assert.deepEqual(requestBody.tools, [
+      { type: "code_interpreter" },
+      { type: "web_search", enable_image_understanding: true },
+      { type: "x_search", enable_image_understanding: true },
+    ]);
+  });
+
+  it("parses streamed chat completion chunks before validating import content", async () => {
+    const result = await generateModelImportContent({
+      query: "OpenAI GPT-4.1",
+      template: createModelImportTemplate(),
+      today: "2026-07-03",
+      config: {
+        baseUrl: "https://api.example.com/v1",
+        apiKey: "test-key",
+        model: "gpt-test",
+      },
+      fetcher: async () =>
+        new Response(
+          [
+            'data: {"choices":[{"delta":{"content":"{\\"models\\":["}}]}\n\n',
+            'data: {"choices":[{"delta":{"content":"{\\"name\\":\\"GPT-4.1\\",\\"developer\\":\\"openai\\"}"}}]}\n\n',
+            'data: {"choices":[{"delta":{"content":"]}"}}]}\n\n',
+            "data: [DONE]\n\n",
+          ].join(""),
+          {
+            status: 200,
+            headers: { "content-type": "text/event-stream" },
+          },
+        ),
+    });
+
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.content, '{"models":[{"name":"GPT-4.1","developer":"openai"}]}');
+    }
   });
 });

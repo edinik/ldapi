@@ -47,6 +47,12 @@ type GenerateInput = {
   fetcher?: typeof fetch;
 };
 
+const modelResearchTools = [
+  { type: "code_interpreter" },
+  { type: "web_search", enable_image_understanding: true },
+  { type: "x_search", enable_image_understanding: true },
+];
+
 function requiredEnv(env: NodeJS.ProcessEnv | Record<string, string | undefined>, name: string) {
   const value = env[name]?.trim();
   return value ? value : null;
@@ -148,6 +154,92 @@ function getAssistantContent(payload: unknown) {
   return typeof content === "string" ? content : null;
 }
 
+function getAssistantDeltaContent(payload: unknown) {
+  if (!payload || typeof payload !== "object") return null;
+  const choices = (payload as { choices?: unknown }).choices;
+  if (!Array.isArray(choices)) return null;
+  const first = choices[0];
+  if (!first || typeof first !== "object") return null;
+  const delta = (first as { delta?: unknown }).delta;
+  if (!delta || typeof delta !== "object") return null;
+  const content = (delta as { content?: unknown }).content;
+  return typeof content === "string" ? content : null;
+}
+
+function buildChatCompletionRequestBody({ query, template, today, model }: PromptInput & { model: string }) {
+  return {
+    model,
+    tools: modelResearchTools,
+    stream: true,
+    messages: buildModelImportPrompt({ query, template, today }),
+    temperature: 0.2,
+    stream_options: { include_usage: true },
+  };
+}
+
+function getErrorSnippet(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized ? `：${normalized.slice(0, 500)}` : "";
+}
+
+function parseJsonAssistantContent(text: string) {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    return { ok: false as const, error: "AI 返回内容不是有效 JSON" };
+  }
+
+  const assistantContent = getAssistantContent(payload);
+  if (!assistantContent) {
+    return { ok: false as const, error: "AI 返回中缺少 message.content" };
+  }
+
+  return { ok: true as const, content: assistantContent };
+}
+
+function parseSseAssistantContent(text: string) {
+  let content = "";
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line.startsWith("data:")) continue;
+
+    const data = line.slice("data:".length).trim();
+    if (!data || data === "[DONE]") continue;
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(data);
+    } catch {
+      return { ok: false as const, error: "AI 流式返回中包含无效 JSON 数据块" };
+    }
+
+    const deltaContent = getAssistantDeltaContent(payload);
+    if (deltaContent) {
+      content += deltaContent;
+      continue;
+    }
+
+    const messageContent = getAssistantContent(payload);
+    if (messageContent) content += messageContent;
+  }
+
+  if (!content) {
+    return { ok: false as const, error: "AI 流式返回中缺少 assistant 内容" };
+  }
+
+  return { ok: true as const, content };
+}
+
+function parseAssistantResponse(text: string, contentType: string | null) {
+  if (contentType?.toLowerCase().includes("text/event-stream") || text.trimStart().startsWith("data:")) {
+    return parseSseAssistantContent(text);
+  }
+
+  return parseJsonAssistantContent(text);
+}
+
 export async function generateModelImportContent({
   query,
   template,
@@ -159,30 +251,21 @@ export async function generateModelImportContent({
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
+      Accept: "text/event-stream",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: config.model,
-      messages: buildModelImportPrompt({ query, template, today }),
-      temperature: 0.2,
-    }),
+    body: JSON.stringify(buildChatCompletionRequestBody({ query, template, today, model: config.model })),
   });
 
+  const responseText = await response.text();
   if (!response.ok) {
-    return { ok: false, error: `AI 请求失败：HTTP ${response.status}` };
+    return { ok: false, error: `AI 请求失败：HTTP ${response.status}${getErrorSnippet(responseText)}` };
   }
 
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    return { ok: false, error: "AI 返回内容不是有效 JSON" };
+  const assistantContent = parseAssistantResponse(responseText, response.headers.get("content-type"));
+  if (!assistantContent.ok) {
+    return assistantContent;
   }
 
-  const assistantContent = getAssistantContent(payload);
-  if (!assistantContent) {
-    return { ok: false, error: "AI 返回中缺少 message.content" };
-  }
-
-  return validateGeneratedImportContent(assistantContent);
+  return validateGeneratedImportContent(assistantContent.content);
 }

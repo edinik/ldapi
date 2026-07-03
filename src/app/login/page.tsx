@@ -17,7 +17,7 @@ export default async function LoginPage() {
     <main className="ld-page grid min-h-screen place-items-center px-4 py-10">
       <section className="w-full max-w-md rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-8 shadow-[var(--shadow-soft)]">
         <div className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-full bg-[var(--ink)] text-sm font-semibold text-[var(--on-dark)]">
+          <span className="grid size-9 place-items-center rounded-full border border-[var(--hairline)] bg-[rgba(250,249,245,0.92)] text-sm font-semibold text-[var(--primary)] shadow-[var(--shadow-soft)]">
             L
           </span>
           <div>
