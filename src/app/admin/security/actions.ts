@@ -2,6 +2,8 @@
 
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
+import { parseAiSettingsPayload } from "@/lib/ai-settings";
+import { saveAiSettings } from "@/lib/ai-settings-store";
 import { requireAdmin } from "@/lib/session";
 import { generateTotpSecret, verifyTotpCode } from "@/lib/totp";
 import { eq } from "drizzle-orm";
@@ -52,4 +54,16 @@ export async function disableTotp() {
     .where(eq(adminUsers.id, session.userId));
 
   redirect("/admin/security?success=disabled");
+}
+
+export async function saveAiGenerationSettings(formData: FormData) {
+  await requireAdmin();
+
+  await saveAiSettings(db, parseAiSettingsPayload({
+    baseUrl: formData.get("baseUrl"),
+    apiKey: formData.get("apiKey"),
+    model: formData.get("model"),
+  }));
+
+  redirect("/admin/security?success=ai-saved");
 }

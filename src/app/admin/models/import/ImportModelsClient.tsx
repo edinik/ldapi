@@ -21,6 +21,11 @@ type ImportResult = {
   }>;
 };
 
+type GenerateResult = {
+  content?: string;
+  error?: string;
+};
+
 const actionLabels = {
   create: "新增",
   update: "更新",
@@ -32,6 +37,9 @@ export default function ImportModelsClient({ template }: { template: string }) {
   const [content, setContent] = useState(template);
   const [upsert, setUpsert] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateQuery, setGenerateQuery] = useState("");
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [importSuccess, setImportSuccess] = useState(false);
 
@@ -51,6 +59,33 @@ export default function ImportModelsClient({ template }: { template: string }) {
       setImportSuccess(true);
       router.refresh();
     }
+  }
+
+  async function generateImportContent() {
+    const query = generateQuery.trim();
+    if (!query) {
+      setGenerateError("请输入模型或厂商名称");
+      return;
+    }
+
+    setGenerating(true);
+    setGenerateError(null);
+    setImportSuccess(false);
+    const res = await fetch("/api/models/import/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const data = (await res.json()) as GenerateResult;
+    setGenerating(false);
+
+    if (!res.ok || !data.content) {
+      setGenerateError(data.error || "AI 生成失败");
+      return;
+    }
+
+    setContent(data.content);
+    setResult(null);
   }
 
   return (
@@ -94,6 +129,36 @@ export default function ImportModelsClient({ template }: { template: string }) {
       <aside className="space-y-5">
         <section className="ld-card-light p-5">
           <h2 className="text-lg font-semibold text-[var(--ink)]">AI 整理提示词</h2>
+          <div className="mt-4 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3">
+            <label htmlFor="model-generate-query" className="ld-label">
+              模型或厂商
+            </label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                id="model-generate-query"
+                value={generateQuery}
+                onChange={(event) => setGenerateQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void generateImportContent();
+                  }
+                }}
+                placeholder="例如 OpenAI GPT-4.1、DeepSeek、Claude"
+                className="ld-input"
+                disabled={generating}
+              />
+              <button
+                type="button"
+                className="ld-button-primary shrink-0"
+                disabled={generating}
+                onClick={() => void generateImportContent()}
+              >
+                {generating ? "生成中..." : "AI 生成"}
+              </button>
+            </div>
+            {generateError && <p className="mt-2 text-sm text-[var(--error)]">{generateError}</p>}
+          </div>
           <div className="mt-4 rounded-lg bg-[rgba(250,249,245,0.72)] p-4 font-mono text-xs leading-6 text-[var(--body)]">
             请访问模型官网和官方文档，整理模型信息为右侧 JSON 模板格式。字段缺失时填 null 或 false；价格统一使用美元 / M tokens；日期使用 YYYY-MM-DD；不要输出 Markdown，只输出 JSON。
           </div>

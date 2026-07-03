@@ -1,6 +1,8 @@
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
-import { disableTotp, confirmTotpSetup, generateTotpSetup } from "./actions";
+import { disableTotp, confirmTotpSetup, generateTotpSetup, saveAiGenerationSettings } from "./actions";
+import { maskSecret, resolveOpenAiCompatibleConfig } from "@/lib/ai-settings";
+import { getStoredAiSettings } from "@/lib/ai-settings-store";
 import { requireAdmin } from "@/lib/session";
 import { createTotpUri, generateTotpQrCode } from "@/lib/totp";
 import { eq } from "drizzle-orm";
@@ -15,6 +17,7 @@ const successMessages: Record<string, string> = {
   generated: "已生成新的 TOTP 密钥，请添加到验证器后确认。",
   enabled: "TOTP 验证已启用。",
   disabled: "TOTP 验证已停用。",
+  "ai-saved": "AI 生成配置已保存。",
 };
 
 export default async function AdminSecurityPage({
@@ -40,6 +43,9 @@ export default async function AdminSecurityPage({
   const qrCodeDataUrl = totpUri ? await generateTotpQrCode(totpUri) : null;
   const error = params?.error ? errorMessages[params.error] : null;
   const success = params?.success ? successMessages[params.success] : null;
+  const aiSettings = await getStoredAiSettings(db);
+  const aiConfig = resolveOpenAiCompatibleConfig(process.env, aiSettings);
+  const configuredApiKey = aiSettings.apiKey || process.env.AI_API_KEY || null;
 
   return (
     <main className="ld-page min-h-screen py-8">
@@ -53,6 +59,17 @@ export default async function AdminSecurityPage({
             为管理员登录增加基于时间的一次性验证码。
           </p>
         </header>
+
+        {error && (
+          <p className="mt-6 rounded-lg border border-[rgba(198,69,69,0.24)] bg-[rgba(198,69,69,0.08)] px-3 py-2 text-sm text-[var(--error)]">
+            {error}
+          </p>
+        )}
+        {success && (
+          <p className="mt-6 rounded-lg border border-[rgba(93,184,114,0.28)] bg-[rgba(93,184,114,0.12)] px-3 py-2 text-sm text-[var(--ink)]">
+            {success}
+          </p>
+        )}
 
         <section className="ld-card-light mt-8 p-6">
           <div className="flex flex-col justify-between gap-4 border-b border-[var(--hairline)] pb-5 sm:flex-row sm:items-center">
@@ -76,17 +93,6 @@ export default async function AdminSecurityPage({
               </form>
             )}
           </div>
-
-          {error && (
-            <p className="mt-5 rounded-lg border border-[rgba(198,69,69,0.24)] bg-[rgba(198,69,69,0.08)] px-3 py-2 text-sm text-[var(--error)]">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="mt-5 rounded-lg border border-[rgba(93,184,114,0.28)] bg-[rgba(93,184,114,0.12)] px-3 py-2 text-sm text-[var(--ink)]">
-              {success}
-            </p>
-          )}
 
           {totpUri && (
             <div className="mt-6 space-y-5">
@@ -164,6 +170,77 @@ export default async function AdminSecurityPage({
               </form>
             </div>
           )}
+        </section>
+
+        <section className="ld-card-light mt-6 p-6">
+          <div className="border-b border-[var(--hairline)] pb-5">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">AI 导入生成</h2>
+            <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+              配置 OpenAI-compatible 接口，用于模型导入页的 AI 生成。数据库配置优先于环境变量。
+            </p>
+          </div>
+
+          <div className="mt-5 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3">
+            <p className="text-sm font-semibold text-[var(--ink)]">
+              当前状态：{aiConfig.ok ? "已配置" : aiConfig.error}
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              API Key：{configuredApiKey ? maskSecret(configuredApiKey) : "未配置"}
+            </p>
+          </div>
+
+          <form action={saveAiGenerationSettings} className="mt-5 space-y-4">
+            <div>
+              <label htmlFor="aiBaseUrl" className="ld-label">
+                Base URL
+              </label>
+              <input
+                id="aiBaseUrl"
+                name="baseUrl"
+                type="url"
+                defaultValue={aiSettings.baseUrl || process.env.AI_BASE_URL || ""}
+                placeholder="https://api.openai.com/v1"
+                className="ld-input mt-2"
+              />
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                留空时使用默认 OpenAI 地址或环境变量。
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="aiModel" className="ld-label">
+                模型
+              </label>
+              <input
+                id="aiModel"
+                name="model"
+                defaultValue={aiSettings.model || process.env.AI_MODEL || ""}
+                placeholder="gpt-4.1-mini"
+                className="ld-input mt-2"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="aiApiKey" className="ld-label">
+                API Key
+              </label>
+              <input
+                id="aiApiKey"
+                name="apiKey"
+                type="password"
+                autoComplete="new-password"
+                placeholder={configuredApiKey ? "留空则保留当前密钥" : "请输入 API Key"}
+                className="ld-input mt-2"
+              />
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                出于安全考虑，已保存的密钥不会明文显示。
+              </p>
+            </div>
+
+            <button type="submit" className="ld-button-primary">
+              保存 AI 配置
+            </button>
+          </form>
         </section>
       </div>
     </main>

@@ -129,3 +129,9 @@ export const sessions = sqliteTable("sessions", {
   userId: integer("user_id").notNull().references(() => adminUsers.id),
   expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 });
+
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});

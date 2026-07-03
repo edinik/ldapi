@@ -84,11 +84,19 @@ cp .env.example .env
 APP_PORT=3000
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=change-this-password
+AI_BASE_URL=https://api.openai.com/v1
+AI_API_KEY=sk-...
+AI_MODEL=gpt-4.1-mini
 ```
 
 - `APP_PORT`：宿主机暴露端口，默认 `3000`。
 - `ADMIN_USERNAME`：首次启动时创建的管理员用户名，默认 `admin`。
 - `ADMIN_PASSWORD`：首次启动时创建的管理员密码，必须显式设置。
+- `AI_BASE_URL`：OpenAI-compatible 接口地址，可选，留空默认 `https://api.openai.com/v1`。
+- `AI_API_KEY`：AI 模型导入生成功能使用的服务端密钥，不会暴露给浏览器。
+- `AI_MODEL`：用于生成模型导入 JSON 的模型名称，例如 `gpt-4.1-mini` 或兼容服务提供的模型 ID。
+
+启动后也可以在后台 `安全设置 -> AI 导入生成` 中维护这些配置。后台保存的配置优先于 `.env`，API Key 不会明文回显；保存时留空 API Key 会保留当前密钥。
 
 ### 3. 构建并启动
 
