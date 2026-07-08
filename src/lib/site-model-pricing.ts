@@ -23,6 +23,10 @@ export type ModelPricingDefaults = {
   cacheWriteCostPerMTokens: number | null;
 };
 
+type StoredSiteModelPricingSettings = {
+  [Key in keyof SiteModelPricingSettings]?: unknown;
+};
+
 function isPricingMode(value: unknown): value is PricingMode {
   return typeof value === "string" && pricingModes.includes(value as PricingMode);
 }
@@ -64,7 +68,7 @@ export function normalizeSiteModelPricingPayload(value: Record<string, unknown>)
   };
 }
 
-export function normalizeStoredSiteModelPricing(value: Partial<SiteModelPricingSettings>): SiteModelPricingSettings {
+export function normalizeStoredSiteModelPricing(value: StoredSiteModelPricingSettings): SiteModelPricingSettings {
   return normalizeSiteModelPricingPayload({
     pricingMode: value.pricingMode,
     usagePriceSource: value.usagePriceSource,

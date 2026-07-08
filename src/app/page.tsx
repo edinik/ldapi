@@ -6,6 +6,7 @@ import { getHomepageModels, type ModelDisplayItem } from "@/lib/model-display";
 import { parseStoredResourceTags } from "@/lib/resource-payload";
 import { requireAdmin } from "@/lib/session";
 import { getSiteModelCapabilityLabels, parseReasoningEffortLevels, resolveSiteModelCapabilities } from "@/lib/site-model-capabilities";
+import { formatSiteModelPricing, normalizeStoredSiteModelPricing } from "@/lib/site-model-pricing";
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 
@@ -41,8 +42,27 @@ export default async function HomePage() {
         { ...sm, reasoningEffortLevelsOverride: sm.reasoningEffortLevelsOverride == null ? null : parseReasoningEffortLevels(sm.reasoningEffortLevelsOverride) },
       );
       const labels = getSiteModelCapabilityLabels(capabilities);
+      const pricingLabels = formatSiteModelPricing(
+        {
+          inputCostPerMTokens: sm.model.inputCostPerMTokens,
+          outputCostPerMTokens: sm.model.outputCostPerMTokens,
+          cacheReadCostPerMTokens: sm.model.cacheReadCostPerMTokens,
+          cacheWriteCostPerMTokens: sm.model.cacheWriteCostPerMTokens,
+        },
+        normalizeStoredSiteModelPricing({
+          pricingMode: sm.pricingMode,
+          usagePriceSource: sm.usagePriceSource,
+          priceMultiplier: sm.priceMultiplier,
+          inputCostPerMTokensOverride: sm.inputCostPerMTokensOverride,
+          outputCostPerMTokensOverride: sm.outputCostPerMTokensOverride,
+          cacheReadCostPerMTokensOverride: sm.cacheReadCostPerMTokensOverride,
+          cacheWriteCostPerMTokensOverride: sm.cacheWriteCostPerMTokensOverride,
+          perRequestCost: sm.perRequestCost,
+          pricingNotes: sm.pricingNotes,
+        }),
+      );
 
-      return { name: sm.model.name, capabilities: labels, rating: sm.rating ?? null };
+      return { name: sm.model.name, capabilities: labels, rating: sm.rating ?? null, pricingLabels };
     });
 
     return {

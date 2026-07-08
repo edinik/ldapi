@@ -26,6 +26,7 @@ export type SiteDirectoryItem = DirectorySite & {
     name: string;
     capabilities: string[];
     rating: string | null;
+    pricingLabels: string[];
   }[];
 };
 
@@ -204,6 +205,13 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
                             {model.capabilities.map((capability) => (
                               <span key={capability} className="ld-badge bg-[rgba(250,249,245,0.7)]">
                                 {capability}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {model.pricingLabels.map((price) => (
+                              <span key={price} className="ld-badge bg-[rgba(250,249,245,0.7)]">
+                                {price}
                               </span>
                             ))}
                           </div>

@@ -237,3 +237,20 @@ describe("site model pricing payloads", () => {
     );
   });
 });
+
+describe("site model directory pricing labels", () => {
+  it("builds labels that can be displayed by the public directory", () => {
+    const settings = normalizeSiteModelPricingPayload({
+      pricingMode: "usage",
+      usagePriceSource: "model_default",
+      priceMultiplier: "1.1",
+    });
+
+    assert.deepEqual(formatSiteModelPricing(modelDefaults, settings), [
+      "输入 $5.5/M tokens",
+      "输出 $27.5/M tokens",
+      "缓存读 $0.55/M tokens",
+      "缓存写 $6.875/M tokens",
+    ]);
+  });
+});
