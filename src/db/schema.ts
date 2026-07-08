@@ -99,6 +99,15 @@ export const siteModels = sqliteTable("site_models", {
   reasoningEffortLevelsOverride: text("reasoning_effort_levels_override"),
   supportsWebSearchOverride: integer("supports_web_search_override", { mode: "boolean" }),
   rating: text("rating"),
+  pricingMode: text("pricing_mode"),
+  usagePriceSource: text("usage_price_source"),
+  priceMultiplier: real("price_multiplier"),
+  inputCostPerMTokensOverride: real("input_cost_per_m_tokens_override"),
+  outputCostPerMTokensOverride: real("output_cost_per_m_tokens_override"),
+  cacheReadCostPerMTokensOverride: real("cache_read_cost_per_m_tokens_override"),
+  cacheWriteCostPerMTokensOverride: real("cache_write_cost_per_m_tokens_override"),
+  perRequestCost: real("per_request_cost"),
+  pricingNotes: text("pricing_notes"),
 });
 
 // Relations

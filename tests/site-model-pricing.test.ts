@@ -7,6 +7,7 @@ import {
   type ModelPricingDefaults,
   type SiteModelPricingSettings,
 } from "../src/lib/site-model-pricing";
+import { siteModels } from "../src/db/schema";
 
 const modelDefaults: ModelPricingDefaults = {
   inputCostPerMTokens: 5,
@@ -175,5 +176,19 @@ describe("site model pricing", () => {
       formatSiteModelPricing(modelDefaults, { ...base, pricingMode: "custom", perRequestCost: null, pricingNotes: "按套餐消耗额度" }),
       ["按套餐消耗额度"],
     );
+  });
+});
+
+describe("site model pricing schema", () => {
+  it("exposes pricing columns on the site_models schema", () => {
+    assert.equal(siteModels.pricingMode.name, "pricing_mode");
+    assert.equal(siteModels.usagePriceSource.name, "usage_price_source");
+    assert.equal(siteModels.priceMultiplier.name, "price_multiplier");
+    assert.equal(siteModels.inputCostPerMTokensOverride.name, "input_cost_per_m_tokens_override");
+    assert.equal(siteModels.outputCostPerMTokensOverride.name, "output_cost_per_m_tokens_override");
+    assert.equal(siteModels.cacheReadCostPerMTokensOverride.name, "cache_read_cost_per_m_tokens_override");
+    assert.equal(siteModels.cacheWriteCostPerMTokensOverride.name, "cache_write_cost_per_m_tokens_override");
+    assert.equal(siteModels.perRequestCost.name, "per_request_cost");
+    assert.equal(siteModels.pricingNotes.name, "pricing_notes");
   });
 });
