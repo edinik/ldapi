@@ -3,8 +3,16 @@
 import { useState } from "react";
 import { filterAvailableSiteModels, type AvailableSiteModelOption } from "@/lib/site-model-options";
 import { parseReasoningEffortLevels, reasoningEffortLevels, type ReasoningEffortLevel } from "@/lib/site-model-capabilities";
+import {
+  normalizeStoredSiteModelPricing,
+  pricingModes,
+  usagePriceSources,
+  type PricingMode,
+  type SiteModelPricingSettings,
+  type UsagePriceSource,
+} from "@/lib/site-model-pricing";
 
-type SiteModelFormItem = {
+type SiteModelFormItem = SiteModelPricingSettings & {
   name: string;
   supportsToolCallingOverride: boolean | null;
   supportsVisionOverride: boolean | null;
@@ -14,8 +22,6 @@ type SiteModelFormItem = {
   supportsWebSearchOverride: boolean | null;
   rating: string | null;
 };
-
-const ratingOptions = ["夯", "顶级", "人上人", "NPC", "拉"];
 
 interface SiteFormProps {
   initialData?: Record<string, unknown> & { modelNames?: string[]; siteModels?: unknown[] };
@@ -111,6 +117,20 @@ function normalizeOverride(value: unknown): boolean | null {
   return null;
 }
 
+function createSiteModelFormItem(name: string): SiteModelFormItem {
+  return {
+    name,
+    supportsToolCallingOverride: null,
+    supportsVisionOverride: null,
+    supportsTemperatureControlOverride: null,
+    supportsReasoningOverride: null,
+    reasoningEffortLevelsOverride: null,
+    supportsWebSearchOverride: null,
+    rating: null,
+    ...normalizeStoredSiteModelPricing({}),
+  };
+}
+
 function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteModelFormItem[] {
   if (Array.isArray(initialData?.siteModels)) {
     return initialData.siteModels
@@ -134,21 +154,23 @@ function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteM
               : null,
           supportsWebSearchOverride: normalizeOverride(record.supportsWebSearchOverride),
           rating: typeof record.rating === "string" ? record.rating || null : null,
+          ...normalizeStoredSiteModelPricing({
+            pricingMode: typeof record.pricingMode === "string" ? (record.pricingMode as PricingMode) : undefined,
+            usagePriceSource: typeof record.usagePriceSource === "string" ? (record.usagePriceSource as UsagePriceSource) : undefined,
+            priceMultiplier: typeof record.priceMultiplier === "number" ? record.priceMultiplier : undefined,
+            inputCostPerMTokensOverride: typeof record.inputCostPerMTokensOverride === "number" ? record.inputCostPerMTokensOverride : null,
+            outputCostPerMTokensOverride: typeof record.outputCostPerMTokensOverride === "number" ? record.outputCostPerMTokensOverride : null,
+            cacheReadCostPerMTokensOverride: typeof record.cacheReadCostPerMTokensOverride === "number" ? record.cacheReadCostPerMTokensOverride : null,
+            cacheWriteCostPerMTokensOverride: typeof record.cacheWriteCostPerMTokensOverride === "number" ? record.cacheWriteCostPerMTokensOverride : null,
+            perRequestCost: typeof record.perRequestCost === "number" ? record.perRequestCost : null,
+            pricingNotes: typeof record.pricingNotes === "string" ? record.pricingNotes : null,
+          }),
         };
       })
       .filter((item): item is SiteModelFormItem => item !== null);
   }
 
-  return (initialData?.modelNames || []).map((name) => ({
-    name,
-    supportsToolCallingOverride: null,
-    supportsVisionOverride: null,
-    supportsTemperatureControlOverride: null,
-    supportsReasoningOverride: null,
-    reasoningEffortLevelsOverride: null,
-    supportsWebSearchOverride: null,
-    rating: null,
-  }));
+  return (initialData?.modelNames || []).map(createSiteModelFormItem);
 }
 
 function overrideToSelectValue(value: boolean | null) {
@@ -222,11 +244,61 @@ function MiniSelect({
   );
 }
 
+function NumberInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="ld-filter-label">{label}</span>
+      <input
+        type="number"
+        step="any"
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(event) => {
+          const next = event.target.value;
+          onChange(next === "" ? null : Number(next));
+        }}
+        className="ld-input mt-2"
+      />
+    </label>
+  );
+}
+
 const capabilityOverrideOptions = [
   { value: "inherit", label: "继承模型默认" },
   { value: "true", label: "本站支持" },
   { value: "false", label: "本站不支持" },
 ];
+
+const pricingModeOptions = pricingModes.map((mode) => {
+  const labels: Record<PricingMode, string> = {
+    inherit: "继承模型默认价",
+    usage: "按量计费",
+    per_request: "按次计费",
+    free: "免费",
+    custom: "自定义说明",
+  };
+
+  return { value: mode, label: labels[mode] };
+});
+
+const usagePriceSourceOptions = usagePriceSources.map((source) => {
+  const labels: Record<UsagePriceSource, string> = {
+    model_default: "使用模型默认价格",
+    manual: "手动填写价格",
+  };
+
+  return { value: source, label: labels[source] };
+});
 
 function CapabilityOverrideSelect({
   label,
@@ -299,6 +371,90 @@ function ReasoningEffortOverride({
   );
 }
 
+function PricingEditor({
+  item,
+  onChange,
+}: {
+  item: SiteModelFormItem;
+  onChange: <K extends keyof Omit<SiteModelFormItem, "name">>(key: K, value: SiteModelFormItem[K]) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.58)] p-3">
+      <p className="text-sm font-semibold text-[var(--ink)]">价格</p>
+      <p className="ld-helper mt-1">公开目录会显示最终输入/输出价或每次价格。</p>
+      <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <MiniSelect
+          label="计费模式"
+          value={item.pricingMode}
+          options={pricingModeOptions}
+          onChange={(value) => onChange("pricingMode", value as PricingMode)}
+        />
+        {item.pricingMode === "usage" && (
+          <>
+            <MiniSelect
+              label="价格来源"
+              value={item.usagePriceSource}
+              options={usagePriceSourceOptions}
+              onChange={(value) => onChange("usagePriceSource", value as UsagePriceSource)}
+            />
+            <NumberInput
+              label="倍率"
+              value={item.priceMultiplier}
+              placeholder="1"
+              onChange={(value) => onChange("priceMultiplier", value ?? 1)}
+            />
+          </>
+        )}
+        {item.pricingMode === "per_request" && (
+          <NumberInput
+            label="每次价格"
+            value={item.perRequestCost}
+            placeholder="0.02"
+            onChange={(value) => onChange("perRequestCost", value)}
+          />
+        )}
+      </div>
+
+      {item.pricingMode === "usage" && item.usagePriceSource === "manual" && (
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <NumberInput
+            label="输入 $/M tokens"
+            value={item.inputCostPerMTokensOverride}
+            onChange={(value) => onChange("inputCostPerMTokensOverride", value)}
+          />
+          <NumberInput
+            label="输出 $/M tokens"
+            value={item.outputCostPerMTokensOverride}
+            onChange={(value) => onChange("outputCostPerMTokensOverride", value)}
+          />
+          <NumberInput
+            label="缓存读 $/M tokens"
+            value={item.cacheReadCostPerMTokensOverride}
+            onChange={(value) => onChange("cacheReadCostPerMTokensOverride", value)}
+          />
+          <NumberInput
+            label="缓存写 $/M tokens"
+            value={item.cacheWriteCostPerMTokensOverride}
+            onChange={(value) => onChange("cacheWriteCostPerMTokensOverride", value)}
+          />
+        </div>
+      )}
+
+      {item.pricingMode === "custom" && (
+        <label className="mt-3 block">
+          <span className="ld-filter-label">价格说明</span>
+          <textarea
+            value={item.pricingNotes ?? ""}
+            rows={3}
+            onChange={(event) => onChange("pricingNotes", event.target.value || null)}
+            className="ld-input mt-2 min-h-20 resize-y"
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
 export default function SiteForm({ initialData, onSubmit, saving, availableModels = [] }: SiteFormProps) {
   const [modelInput, setModelInput] = useState("");
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
@@ -312,19 +468,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
   function addModel(modelName = modelInput) {
     const name = modelName.trim();
     if (name && !siteModelItems.some((item) => item.name === name)) {
-      setSiteModelItems([
-        ...siteModelItems,
-        {
-          name,
-          supportsToolCallingOverride: null,
-          supportsVisionOverride: null,
-          supportsTemperatureControlOverride: null,
-          supportsReasoningOverride: null,
-          reasoningEffortLevelsOverride: null,
-          supportsWebSearchOverride: null,
-          rating: null,
-        },
-      ]);
+      setSiteModelItems([...siteModelItems, createSiteModelFormItem(name)]);
     }
     setModelInput("");
     setModelDropdownOpen(false);
@@ -545,6 +689,12 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
                   <ReasoningEffortOverride
                     value={item.reasoningEffortLevelsOverride}
                     onChange={(value) => updateModelOverride(item.name, "reasoningEffortLevelsOverride", value)}
+                  />
+                </div>
+                <div className="mt-3">
+                  <PricingEditor
+                    item={item}
+                    onChange={(key, value) => updateModelOverride(item.name, key, value)}
                   />
                 </div>
               </div>
