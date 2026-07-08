@@ -8,6 +8,7 @@ import {
   type SiteModelPricingSettings,
 } from "../src/lib/site-model-pricing";
 import { siteModels } from "../src/db/schema";
+import { getSiteModelPayloads } from "../src/lib/site-model-payload";
 
 const modelDefaults: ModelPricingDefaults = {
   inputCostPerMTokens: 5,
@@ -190,5 +191,49 @@ describe("site model pricing schema", () => {
     assert.equal(siteModels.cacheWriteCostPerMTokensOverride.name, "cache_write_cost_per_m_tokens_override");
     assert.equal(siteModels.perRequestCost.name, "per_request_cost");
     assert.equal(siteModels.pricingNotes.name, "pricing_notes");
+  });
+});
+
+describe("site model pricing payloads", () => {
+  it("includes normalized pricing fields when reading site model payloads", () => {
+    assert.deepEqual(
+      getSiteModelPayloads({
+        siteModels: [
+          {
+            name: "Claude Opus",
+            pricingMode: "usage",
+            usagePriceSource: "manual",
+            priceMultiplier: "1.5",
+            inputCostPerMTokensOverride: "2",
+            outputCostPerMTokensOverride: "8",
+            cacheReadCostPerMTokensOverride: "",
+            cacheWriteCostPerMTokensOverride: "1",
+            perRequestCost: "0.05",
+            pricingNotes: "  site markup ",
+          },
+        ],
+      }),
+      [
+        {
+          name: "Claude Opus",
+          supportsToolCallingOverride: null,
+          supportsVisionOverride: null,
+          supportsTemperatureControlOverride: null,
+          supportsReasoningOverride: null,
+          reasoningEffortLevelsOverride: null,
+          supportsWebSearchOverride: null,
+          rating: null,
+          pricingMode: "usage",
+          usagePriceSource: "manual",
+          priceMultiplier: 1.5,
+          inputCostPerMTokensOverride: 2,
+          outputCostPerMTokensOverride: 8,
+          cacheReadCostPerMTokensOverride: null,
+          cacheWriteCostPerMTokensOverride: 1,
+          perRequestCost: 0.05,
+          pricingNotes: "site markup",
+        },
+      ],
+    );
   });
 });

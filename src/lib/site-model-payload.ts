@@ -2,8 +2,9 @@ import { db } from "@/db";
 import { models, siteModels } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { serializeReasoningEffortLevels } from "@/lib/site-model-capabilities";
+import { normalizeSiteModelPricingPayload, type SiteModelPricingSettings } from "@/lib/site-model-pricing";
 
-export type SiteModelPayload = {
+export type SiteModelPayload = SiteModelPricingSettings & {
   name: string;
   supportsToolCallingOverride?: boolean | null;
   supportsVisionOverride?: boolean | null;
@@ -22,7 +23,7 @@ function nullableBoolean(value: unknown) {
 function normalizeSiteModelPayload(value: unknown): SiteModelPayload | null {
   if (typeof value === "string") {
     const name = value.trim();
-    return name ? { name } : null;
+    return name ? { name, ...normalizeSiteModelPricingPayload({}) } : null;
   }
 
   if (!value || typeof value !== "object") return null;
@@ -30,6 +31,7 @@ function normalizeSiteModelPayload(value: unknown): SiteModelPayload | null {
   const record = value as Record<string, unknown>;
   const name = typeof record.name === "string" ? record.name.trim() : "";
   if (!name) return null;
+  const pricing = normalizeSiteModelPricingPayload(record);
 
   return {
     name,
@@ -40,6 +42,7 @@ function normalizeSiteModelPayload(value: unknown): SiteModelPayload | null {
     reasoningEffortLevelsOverride: Array.isArray(record.reasoningEffortLevelsOverride) ? record.reasoningEffortLevelsOverride.map(String) : null,
     supportsWebSearchOverride: nullableBoolean(record.supportsWebSearchOverride),
     rating: typeof record.rating === "string" ? record.rating || null : null,
+    ...pricing,
   };
 }
 
@@ -74,6 +77,15 @@ export async function syncSiteModels(siteId: number, payloads: SiteModelPayload[
         : null,
       supportsWebSearchOverride: payload.supportsWebSearchOverride ?? null,
       rating: payload.rating ?? null,
+      pricingMode: payload.pricingMode,
+      usagePriceSource: payload.usagePriceSource,
+      priceMultiplier: payload.priceMultiplier,
+      inputCostPerMTokensOverride: payload.inputCostPerMTokensOverride,
+      outputCostPerMTokensOverride: payload.outputCostPerMTokensOverride,
+      cacheReadCostPerMTokensOverride: payload.cacheReadCostPerMTokensOverride,
+      cacheWriteCostPerMTokensOverride: payload.cacheWriteCostPerMTokensOverride,
+      perRequestCost: payload.perRequestCost,
+      pricingNotes: payload.pricingNotes,
     });
   }
 }

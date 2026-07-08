@@ -95,9 +95,7 @@ function usageLabels(source: ModelPricingDefaults, multiplier: number) {
     ["缓存写", multiply(source.cacheWriteCostPerMTokens, multiplier)],
   ] as const;
 
-  const resolved = labels
-    .filter((item): item is readonly [string, number] => item[1] != null)
-    .map(([label, value]) => `${label} ${formatMoney(value)}/M tokens`);
+  const resolved = labels.flatMap(([label, value]) => (value == null ? [] : [`${label} ${formatMoney(value)}/M tokens`]));
 
   return resolved.length > 0 ? resolved : ["价格未填写"];
 }
