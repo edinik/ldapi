@@ -1,18 +1,42 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-const homePageSource = readFileSync(join(process.cwd(), "src/app/page.tsx"), "utf8");
+import { loadAuthenticatedDirectory } from "../src/server/directory/load-authenticated-directory";
 
 describe("page authentication", () => {
-  it("requires admin authentication before rendering the homepage directory", () => {
-    assert.match(homePageSource, /import \{ requireAdmin \} from "@\/lib\/session";/);
+  it("authenticates before loading homepage directory data", async () => {
+    const calls: string[] = [];
+    const directory = { sites: [], models: [], resources: [] };
 
-    const authCallIndex = homePageSource.indexOf("await requireAdmin();");
-    const firstDirectoryQueryIndex = homePageSource.indexOf("db.query.sites.findMany");
+    const result = await loadAuthenticatedDirectory(
+      async () => {
+        calls.push("authenticate");
+      },
+      async () => {
+        calls.push("load-directory");
+        return directory;
+      },
+    );
 
-    assert.notEqual(authCallIndex, -1);
-    assert.ok(authCallIndex < firstDirectoryQueryIndex);
+    assert.deepEqual(calls, ["authenticate", "load-directory"]);
+    assert.equal(result, directory);
+  });
+
+  it("does not load directory data when authentication fails", async () => {
+    let loaded = false;
+
+    await assert.rejects(
+      loadAuthenticatedDirectory(
+        async () => {
+          throw new Error("redirect");
+        },
+        async () => {
+          loaded = true;
+          return { sites: [], models: [], resources: [] };
+        },
+      ),
+      /redirect/,
+    );
+
+    assert.equal(loaded, false);
   });
 });

@@ -1,107 +1,11 @@
-import { db } from "@/db";
-import { resources } from "@/db/schema";
-import { type SiteDirectoryItem } from "@/components/SiteDirectory";
 import { HomeTabs } from "@/components/HomeTabs";
-import { getHomepageModels, type ModelDisplayItem } from "@/lib/model-display";
-import { parseStoredResourceTags } from "@/lib/resource-payload";
-import { requireAdmin } from "@/lib/session";
-import { getSiteModelCapabilityLabels, parseReasoningEffortLevels, resolveSiteModelCapabilities } from "@/lib/site-model-capabilities";
-import { formatSiteModelPricing, normalizeStoredSiteModelPricing } from "@/lib/site-model-pricing";
-import { desc, eq } from "drizzle-orm";
+import { getHomePageData } from "@/server/directory/get-home-page-data";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  await requireAdmin();
-
-  const allSites = await db.query.sites.findMany({
-    where: (sites, { eq }) => eq(sites.isActive, true),
-    with: {
-      siteModels: {
-        with: { model: true },
-      },
-    },
-    orderBy: (sites, { desc }) => [desc(sites.createdAt)],
-  });
-  const allModels = await db.query.models.findMany({
-    orderBy: (models, { asc }) => [asc(models.developer), asc(models.name)],
-  });
-  const allResources = await db.select().from(resources)
-    .where(eq(resources.isActive, true))
-    .orderBy(desc(resources.createdAt));
-  const modelList = allModels.map((model) => ({
-    ...model,
-    reasoningEffortLevels: parseReasoningEffortLevels(model.reasoningEffortLevels),
-  })) as ModelDisplayItem[];
-
-  const siteList: SiteDirectoryItem[] = allSites.map((site) => {
-    const modelCapabilities = site.siteModels.map((sm) => {
-      const capabilities = resolveSiteModelCapabilities(
-        { ...sm.model, reasoningEffortLevels: parseReasoningEffortLevels(sm.model.reasoningEffortLevels) },
-        { ...sm, reasoningEffortLevelsOverride: sm.reasoningEffortLevelsOverride == null ? null : parseReasoningEffortLevels(sm.reasoningEffortLevelsOverride) },
-      );
-      const labels = getSiteModelCapabilityLabels(capabilities);
-      const pricingLabels = formatSiteModelPricing(
-        {
-          inputCostPerMTokens: sm.model.inputCostPerMTokens,
-          outputCostPerMTokens: sm.model.outputCostPerMTokens,
-          cacheReadCostPerMTokens: sm.model.cacheReadCostPerMTokens,
-          cacheWriteCostPerMTokens: sm.model.cacheWriteCostPerMTokens,
-        },
-        normalizeStoredSiteModelPricing({
-          pricingMode: sm.pricingMode,
-          usagePriceSource: sm.usagePriceSource,
-          priceMultiplier: sm.priceMultiplier,
-          inputCostPerMTokensOverride: sm.inputCostPerMTokensOverride,
-          outputCostPerMTokensOverride: sm.outputCostPerMTokensOverride,
-          cacheReadCostPerMTokensOverride: sm.cacheReadCostPerMTokensOverride,
-          cacheWriteCostPerMTokensOverride: sm.cacheWriteCostPerMTokensOverride,
-          perRequestCost: sm.perRequestCost,
-          pricingNotes: sm.pricingNotes,
-        }),
-      );
-
-      return { name: sm.model.name, capabilities: labels, rating: sm.rating ?? null, pricingLabels };
-    });
-
-    return {
-      id: site.id,
-      name: site.name,
-      url: site.url,
-      description: site.description,
-      adminProfileUrl: site.adminProfileUrl,
-      discussionUrl: site.discussionUrl,
-      hasCheckIn: site.hasCheckIn,
-      autoCheckIn: site.autoCheckIn,
-      checkInUrl: site.checkInUrl,
-      supportsClaudeCode: site.supportsClaudeCode,
-      supportsCodex: site.supportsCodex,
-      supportsImmersiveTranslation: site.supportsImmersiveTranslation,
-      welfareUrl: site.welfareUrl,
-      statusUrl: site.statusUrl,
-      hasRateLimit: site.hasRateLimit,
-      rateLimitInfo: site.rateLimitInfo,
-      hasActivityRequirement: site.hasActivityRequirement,
-      activityRequirementInfo: site.activityRequirementInfo,
-      models: modelCapabilities.map((model) => model.name),
-      modelCapabilities,
-    };
-  });
-
-  const homepageModels = getHomepageModels(modelList);
-  const resourceList = allResources.map((resource) => ({
-    id: resource.id,
-    type: resource.type === "tool" ? "tool" as const : "tutorial" as const,
-    title: resource.title,
-    description: resource.description,
-    tags: parseStoredResourceTags(resource.tags),
-    githubUrl: resource.githubUrl,
-    officialUrl: resource.officialUrl,
-    demoUrl: resource.demoUrl,
-    linuxdoUrl: resource.linuxdoUrl,
-    recommendation: resource.recommendation,
-  }));
+  const directory = await getHomePageData();
 
   return (
     <div className="ld-page">
@@ -123,7 +27,7 @@ export default async function HomePage() {
       </header>
 
       <main className="ld-container py-10 lg:py-14">
-          <HomeTabs sites={siteList} models={homepageModels} resources={resourceList} />
+        <HomeTabs sites={directory.sites} models={directory.models} resources={directory.resources} />
       </main>
     </div>
   );
