@@ -1,0 +1,29 @@
+{
+  "id": "project-refactor",
+  "name": "project-refactor",
+  "title": "项目重构规划",
+  "description": "分阶段重构管理端 CRUD 与首页目录边界，提升可维护性和后续开发速度，同时保持外部行为兼容",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "edinik",
+  "assignee": "edinik",
+  "createdAt": "2026-07-13",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "07-13-directory-query-refactor",
+    "07-13-admin-crud-refactor"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
