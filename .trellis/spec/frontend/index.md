@@ -1,39 +1,32 @@
 # Frontend Development Guidelines
 
-> Best practices for frontend development in this project.
-
----
-
-## Overview
-
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
-
----
+These guidelines describe the conventions currently used by the LDAPI Next.js application. They are implementation contracts for pages, client components, server modules, and tests.
 
 ## Guidelines Index
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+| Guide | Description |
+|---|---|
+| [Directory Structure](./directory-structure.md) | Ownership of pages, components, boundary helpers, and server modules |
+| [Component Guidelines](./component-guidelines.md) | Component composition, shared form primitives, and accessibility |
+| [Hook Guidelines](./hook-guidelines.md) | Small client hooks and separation from transport helpers |
+| [State Management](./state-management.md) | Server data, local UI state, and derived state |
+| [Quality Guidelines](./quality-guidelines.md) | Required commands and behavior-focused testing |
+| [Type Safety](./type-safety.md) | Boundary normalization, DTO projections, and injectable database types |
 
----
+## Pre-Development Checklist
 
-## How to Fill These Guidelines
+- Read `directory-structure.md` before adding a new module or moving responsibilities.
+- Read `component-guidelines.md` and `state-management.md` for React or form work.
+- Read `hook-guidelines.md` before adding a custom hook or client request helper.
+- Read `type-safety.md` for API payload, database, or DTO work.
+- Read `quality-guidelines.md` before changing tests or validation commands.
+- For changes crossing UI, API, service, and storage, also read `../guides/cross-layer-thinking-guide.md`.
 
-For each guideline file:
+## Quality Check
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+- Run `npm run check`, then run `npm run build` after the check has completed.
+- Verify external UI, API, and database contracts remain unchanged for refactors.
+- Search for direct database writes in Route Handlers and duplicated transport/form logic.
+- Ensure new boundary functions have behavior tests.
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+**Language**: Project specification documents are written in English.
