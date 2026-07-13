@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { models } from "@/db/schema";
 import { requireAuth } from "@/lib/session";
 import { parseModelPayload } from "@/lib/model-payload";
+import { deleteModel, disableModel, updateModel } from "@/server/admin/models";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAuth();
@@ -18,10 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "模型名称不能为空" }, { status: 400 });
   }
 
-  await db
-    .update(models)
-    .set({ ...modelData, updatedAt: new Date() })
-    .where(eq(models.id, modelId));
+  await updateModel(db, modelId, modelData);
 
   return NextResponse.json({ success: true });
 }
@@ -35,12 +31,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const hard = req.nextUrl.searchParams.get("hard") === "true";
 
   if (hard) {
-    await db.delete(models).where(eq(models.id, modelId));
+    await deleteModel(db, modelId);
   } else {
-    await db
-      .update(models)
-      .set({ isActive: false, showOnHome: false, updatedAt: new Date() })
-      .where(eq(models.id, modelId));
+    await disableModel(db, modelId);
   }
 
   return NextResponse.json({ success: true });

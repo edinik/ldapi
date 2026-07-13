@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { resources } from "@/db/schema";
 import { requireAuth } from "@/lib/session";
 import { parseResourcePayload } from "@/lib/resource-payload";
+import { deleteResource, updateResource } from "@/server/admin/resources";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAuth();
@@ -18,10 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "资源标题不能为空" }, { status: 400 });
   }
 
-  await db
-    .update(resources)
-    .set({ ...resourceData, updatedAt: new Date() })
-    .where(eq(resources.id, resourceId));
+  await updateResource(db, resourceId, resourceData);
 
   return NextResponse.json({ success: true });
 }
@@ -33,6 +29,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const resourceId = parseInt(id);
 
-  await db.delete(resources).where(eq(resources.id, resourceId));
+  await deleteResource(db, resourceId);
   return NextResponse.json({ success: true });
 }

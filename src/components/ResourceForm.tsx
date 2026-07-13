@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { parseStoredResourceTags, type ResourceType } from "@/lib/resource-payload";
+import { buildResourceFormPayload } from "@/lib/admin/forms/resource-form-payload";
+import { FormSection as Section } from "@/components/forms/FormSection";
+import { FormTextField as TextField } from "@/components/forms/FormTextField";
+import { FormCheckboxGroup } from "@/components/forms/FormCheckboxGroup";
+import { FormSubmitBar } from "@/components/forms/FormSubmitBar";
 
 type ResourceFormData = Record<string, unknown>;
 
@@ -20,60 +25,6 @@ function getStringValue(value: unknown) {
 function getBooleanValue(value: unknown, fallback = false) {
   if (typeof value === "boolean") return value;
   return fallback;
-}
-
-function Section({
-  title,
-  description,
-  muted = false,
-  children,
-}: {
-  title: string;
-  description?: string;
-  muted?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset className={muted ? "ld-card-light p-5 opacity-70" : "ld-card-light p-5"}>
-      <legend className="px-1 text-lg font-semibold text-[var(--ink)]">{title}</legend>
-      {description && <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{description}</p>}
-      <div className="mt-5 space-y-5">{children}</div>
-    </fieldset>
-  );
-}
-
-function TextField({
-  name,
-  label,
-  type = "text",
-  required = false,
-  defaultValue,
-  placeholder,
-}: {
-  name: string;
-  label: string;
-  type?: string;
-  required?: boolean;
-  defaultValue?: unknown;
-  placeholder?: string;
-}) {
-  return (
-    <div>
-      <label htmlFor={name} className="ld-label">
-        {label}
-        {required && <span className="text-[var(--primary)]"> *</span>}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        defaultValue={getStringValue(defaultValue)}
-        placeholder={placeholder}
-        className="ld-input mt-2"
-      />
-    </div>
-  );
 }
 
 function normalizeTag(value: string) {
@@ -119,18 +70,7 @@ export default function ResourceForm({ initialData, tagOptions, onSubmit, saving
     event.preventDefault();
     const form = new FormData(event.currentTarget);
 
-    onSubmit({
-      type,
-      title: form.get("title"),
-      description: form.get("description") || null,
-      tags: selectedTags,
-      githubUrl: form.get("githubUrl") || null,
-      officialUrl: form.get("officialUrl") || null,
-      demoUrl: form.get("demoUrl") || null,
-      linuxdoUrl: form.get("linuxdoUrl") || null,
-      recommendation: form.get("recommendation") || null,
-      isActive: form.get("isActive") === "on",
-    });
+    onSubmit(buildResourceFormPayload(form, { type, tags: selectedTags }));
   }
 
   return (
@@ -287,25 +227,20 @@ export default function ResourceForm({ initialData, tagOptions, onSubmit, saving
       </Section>
 
       <Section title="发布状态">
-        <label className="flex gap-3 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3">
-          <input
-            name="isActive"
-            type="checkbox"
-            defaultChecked={isNew ? true : getBooleanValue(d.isActive, true)}
-            className="mt-1 size-4 accent-[var(--primary)]"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-[var(--ink)]">公开展示</span>
-            <span className="ld-helper mt-1 block">只有公开展示的资源会出现在首页资源 tab。</span>
-          </span>
-        </label>
+        <FormCheckboxGroup
+          fields={[
+            {
+              name: "isActive",
+              label: "公开展示",
+              description: "只有公开展示的资源会出现在首页资源 tab。",
+              defaultChecked: isNew ? true : getBooleanValue(d.isActive, true),
+            },
+          ]}
+          columnsClassName=""
+        />
       </Section>
 
-      <div className="sticky bottom-4 z-10 rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-3 shadow-[var(--shadow-soft)] backdrop-blur">
-        <button type="submit" disabled={saving} className="ld-button-primary w-full">
-          {saving ? "保存中..." : "保存资源"}
-        </button>
-      </div>
+      <FormSubmitBar saving={saving} idleLabel="保存资源" />
     </form>
   );
 }

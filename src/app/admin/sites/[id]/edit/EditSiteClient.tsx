@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import SiteForm from "@/components/SiteForm";
 import type { AvailableSiteModelOption } from "@/lib/site-model-options";
+import { requestJson } from "@/lib/admin/json-mutation";
+import { useJsonMutation } from "@/lib/admin/use-json-mutation";
 
 interface Props {
   site: Record<string, unknown> & { id: number; modelNames: string[] };
@@ -12,24 +13,18 @@ interface Props {
 
 export default function EditSiteClient({ site, availableModels }: Props) {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  const { pending: saving, mutate } = useJsonMutation();
 
   async function handleSubmit(data: Record<string, unknown>) {
-    setSaving(true);
-    const res = await fetch(`/api/sites/${site.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const res = await mutate(`/api/sites/${site.id}`, "PUT", data);
     if (res.ok) {
       router.push("/admin");
     }
-    setSaving(false);
   }
 
   async function handleDelete() {
     if (!confirm("确定要删除此站点吗？")) return;
-    await fetch(`/api/sites/${site.id}`, { method: "DELETE" });
+    await requestJson(`/api/sites/${site.id}`, { method: "DELETE" });
     router.push("/admin");
   }
 

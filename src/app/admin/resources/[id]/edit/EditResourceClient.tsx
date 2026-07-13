@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ResourceForm from "@/components/ResourceForm";
+import { requestJson } from "@/lib/admin/json-mutation";
+import { useJsonMutation } from "@/lib/admin/use-json-mutation";
 
 interface Props {
   resource: Record<string, unknown> & { id: number };
@@ -11,26 +12,19 @@ interface Props {
 
 export default function EditResourceClient({ resource, tagOptions }: Props) {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  const { pending: saving, mutate } = useJsonMutation();
 
   async function handleSubmit(data: Record<string, unknown>) {
-    setSaving(true);
-    const res = await fetch(`/api/resources/${resource.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const res = await mutate(`/api/resources/${resource.id}`, "PUT", data);
 
     if (res.ok) {
       router.push("/admin/resources");
     }
-
-    setSaving(false);
   }
 
   async function handleDelete() {
     if (!confirm("确定要删除此资源吗？")) return;
-    await fetch(`/api/resources/${resource.id}`, { method: "DELETE" });
+    await requestJson(`/api/resources/${resource.id}`, { method: "DELETE" });
     router.push("/admin/resources");
   }
 

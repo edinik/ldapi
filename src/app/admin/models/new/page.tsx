@@ -1,27 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ModelForm from "@/components/ModelForm";
+import { useJsonMutation } from "@/lib/admin/use-json-mutation";
 
 export default function NewModelPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  const { pending: saving, mutate } = useJsonMutation();
 
   async function handleSubmit(data: Record<string, unknown>) {
-    setSaving(true);
-    const res = await fetch("/api/models", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const res = await mutate("/api/models", "POST", data);
 
     if (res.ok) {
       router.push("/admin/models");
     }
-
-    setSaving(false);
   }
 
   return (

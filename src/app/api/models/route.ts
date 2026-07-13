@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { models } from "@/db/schema";
 import { requireAuth } from "@/lib/session";
 import { parseModelPayload } from "@/lib/model-payload";
+import { createModel } from "@/server/admin/models";
 
 export async function GET() {
   const allModels = await db.select().from(models).orderBy(models.name);
@@ -20,6 +21,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "模型名称不能为空" }, { status: 400 });
   }
 
-  const [newModel] = await db.insert(models).values(modelData).returning();
+  const newModel = await createModel(db, modelData);
   return NextResponse.json(newModel, { status: 201 });
 }

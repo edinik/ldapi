@@ -1,13 +1,25 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { clearAdminSession, loginPath } from "../src/lib/auth-logout";
 
-const logoutRouteSource = readFileSync(join(process.cwd(), "src/app/api/auth/logout/route.ts"), "utf8");
+describe("logout", () => {
+  it("deletes the active session and returns the login redirect path", async () => {
+    const deleted: string[] = [];
+    const redirectPath = await clearAdminSession("session-id", async (sessionId) => {
+      deleted.push(sessionId);
+    });
 
-describe("logout route", () => {
-  it("redirects browser form submissions to the login page after clearing the session", () => {
-    assert.match(logoutRouteSource, /NextResponse\.redirect/);
-    assert.match(logoutRouteSource, /new URL\("\/login", req\.url\)/);
+    assert.deepEqual(deleted, ["session-id"]);
+    assert.equal(redirectPath, loginPath);
+  });
+
+  it("still returns the login path when no session cookie exists", async () => {
+    let called = false;
+    const redirectPath = await clearAdminSession(undefined, async () => {
+      called = true;
+    });
+
+    assert.equal(called, false);
+    assert.equal(redirectPath, "/login");
   });
 });

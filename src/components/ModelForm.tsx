@@ -4,26 +4,13 @@ import { useMemo, useState } from "react";
 import type React from "react";
 import { lobeIconOptions } from "@/lib/developer-icons";
 import { parseReasoningEffortLevels, reasoningEffortLevels } from "@/lib/site-model-capabilities";
+import { buildModelFormPayload } from "@/lib/admin/forms/model-form-payload";
+import { FormSection as Section } from "@/components/forms/FormSection";
+import { FormTextField as TextField } from "@/components/forms/FormTextField";
+import { FormCheckboxGroup as CheckboxGroup } from "@/components/forms/FormCheckboxGroup";
+import { FormSubmitBar } from "@/components/forms/FormSubmitBar";
 
 type ModelFormData = Record<string, unknown>;
-
-type CheckboxField = {
-  name: string;
-  label: string;
-  description?: string;
-  defaultChecked?: boolean;
-};
-
-type TextFieldProps = {
-  name: string;
-  label: string;
-  type?: string;
-  step?: string;
-  required?: boolean;
-  defaultValue?: unknown;
-  placeholder?: string;
-  helper?: string;
-};
 
 const developerOptions = [
   "deepseek",
@@ -52,58 +39,9 @@ interface ModelFormProps {
   saving: boolean;
 }
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset className="ld-card-light p-5">
-      <legend className="px-1 text-lg font-semibold text-[var(--ink)]">{title}</legend>
-      {description && <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{description}</p>}
-      <div className="mt-5 space-y-5">{children}</div>
-    </fieldset>
-  );
-}
-
 function getStringValue(value: unknown) {
   if (value == null) return "";
   return String(value);
-}
-
-function TextField({
-  name,
-  label,
-  type = "text",
-  step,
-  required = false,
-  defaultValue,
-  placeholder,
-  helper,
-}: TextFieldProps) {
-  return (
-    <div>
-      <label htmlFor={name} className="ld-label">
-        {label}
-        {required && <span className="text-[var(--primary)]"> *</span>}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        step={step}
-        required={required}
-        defaultValue={getStringValue(defaultValue)}
-        placeholder={placeholder}
-        className="ld-input mt-2"
-      />
-      {helper && <p className="ld-helper mt-2">{helper}</p>}
-    </div>
-  );
 }
 
 function DeveloperCombobox({ defaultValue }: { defaultValue?: unknown }) {
@@ -330,30 +268,6 @@ function TypeSelect({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-function CheckboxGroup({ fields, data }: { fields: CheckboxField[]; data: ModelFormData }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {fields.map((field) => (
-        <label
-          key={field.name}
-          className="flex gap-3 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3"
-        >
-          <input
-            name={field.name}
-            type="checkbox"
-            defaultChecked={field.defaultChecked ?? !!data[field.name]}
-            className="mt-1 size-4 accent-[var(--primary)]"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-[var(--ink)]">{field.label}</span>
-            {field.description && <span className="ld-helper mt-1 block">{field.description}</span>}
-          </span>
-        </label>
-      ))}
-    </div>
-  );
-}
-
 function ReasoningEffortCheckboxes({
   defaultValue,
   name = "reasoningEffortLevels",
@@ -379,18 +293,6 @@ function ReasoningEffortCheckboxes({
   );
 }
 
-function getBoolean(form: FormData, name: string) {
-  return form.get(name) === "on";
-}
-
-function getValue(form: FormData, name: string) {
-  return form.get(name) || null;
-}
-
-function getAllValues(form: FormData, name: string) {
-  return form.getAll(name).map(String);
-}
-
 export default function ModelForm({ initialData, onSubmit, saving }: ModelFormProps) {
   const d = initialData || {};
   const isNew = !initialData;
@@ -399,41 +301,7 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
     event.preventDefault();
     const form = new FormData(event.currentTarget);
 
-    onSubmit({
-      developer: getValue(form, "developer"),
-      modelId: getValue(form, "modelId"),
-      name: getValue(form, "name"),
-      icon: getValue(form, "icon"),
-      officialUrl: getValue(form, "officialUrl"),
-      group: getValue(form, "group"),
-      type: getValue(form, "type"),
-      notes: getValue(form, "notes"),
-      supportsToolCalling: getBoolean(form, "supportsToolCalling"),
-      supportsVision: getBoolean(form, "supportsVision"),
-      supportsTemperatureControl: getBoolean(form, "supportsTemperatureControl"),
-      supportsReasoning: getBoolean(form, "supportsReasoning"),
-      reasoningEffortLevels: getAllValues(form, "reasoningEffortLevels"),
-      supportsWebSearch: getBoolean(form, "supportsWebSearch"),
-      inputText: getBoolean(form, "inputText"),
-      inputImage: getBoolean(form, "inputImage"),
-      inputAudio: getBoolean(form, "inputAudio"),
-      inputVideo: getBoolean(form, "inputVideo"),
-      outputText: getBoolean(form, "outputText"),
-      outputImage: getBoolean(form, "outputImage"),
-      outputAudio: getBoolean(form, "outputAudio"),
-      outputVideo: getBoolean(form, "outputVideo"),
-      inputCostPerMTokens: getValue(form, "inputCostPerMTokens"),
-      outputCostPerMTokens: getValue(form, "outputCostPerMTokens"),
-      cacheReadCostPerMTokens: getValue(form, "cacheReadCostPerMTokens"),
-      cacheWriteCostPerMTokens: getValue(form, "cacheWriteCostPerMTokens"),
-      contextWindow: getValue(form, "contextWindow"),
-      maxOutputTokens: getValue(form, "maxOutputTokens"),
-      knowledgeCutoff: getValue(form, "knowledgeCutoff"),
-      releaseDate: getValue(form, "releaseDate"),
-      lastUpdated: getValue(form, "lastUpdated"),
-      isActive: getBoolean(form, "isActive"),
-      showOnHome: getBoolean(form, "showOnHome"),
-    });
+    onSubmit(buildModelFormPayload(form));
   }
 
   return (
@@ -567,11 +435,7 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
         </div>
       </div>
 
-      <div className="sticky bottom-4 z-10 rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-3 shadow-[var(--shadow-soft)] backdrop-blur">
-        <button type="submit" disabled={saving} className="ld-button-primary w-full">
-          {saving ? "保存中..." : "保存模型"}
-        </button>
-      </div>
+      <FormSubmitBar saving={saving} idleLabel="保存模型" />
     </form>
   );
 }

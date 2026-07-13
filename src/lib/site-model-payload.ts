@@ -1,5 +1,5 @@
-import { db } from "@/db";
 import { models, siteModels } from "@/db/schema";
+import type { AppDb } from "@/db/types";
 import { eq } from "drizzle-orm";
 import { serializeReasoningEffortLevels } from "@/lib/site-model-capabilities";
 import { normalizeSiteModelPricingPayload, type SiteModelPricingSettings } from "@/lib/site-model-pricing";
@@ -58,14 +58,14 @@ export function getSiteModelPayloads(body: Record<string, unknown>) {
   return [];
 }
 
-export async function syncSiteModels(siteId: number, payloads: SiteModelPayload[]) {
+export async function syncSiteModels(database: AppDb, siteId: number, payloads: SiteModelPayload[]) {
   for (const payload of payloads) {
-    let [model] = await db.select().from(models).where(eq(models.name, payload.name));
+    let [model] = await database.select().from(models).where(eq(models.name, payload.name));
     if (!model) {
-      [model] = await db.insert(models).values({ name: payload.name }).returning();
+      [model] = await database.insert(models).values({ name: payload.name }).returning();
     }
 
-    await db.insert(siteModels).values({
+    await database.insert(siteModels).values({
       siteId,
       modelId: model.id,
       supportsToolCallingOverride: payload.supportsToolCallingOverride ?? null,

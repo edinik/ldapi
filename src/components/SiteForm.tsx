@@ -11,6 +11,11 @@ import {
   type SiteModelPricingSettings,
   type UsagePriceSource,
 } from "@/lib/site-model-pricing";
+import { buildSiteFormPayload } from "@/lib/admin/forms/site-form-payload";
+import { FormSection as Section } from "@/components/forms/FormSection";
+import { FormTextField as TextField } from "@/components/forms/FormTextField";
+import { FormCheckboxGroup as CheckboxGroup } from "@/components/forms/FormCheckboxGroup";
+import { FormSubmitBar } from "@/components/forms/FormSubmitBar";
 
 type SiteModelFormItem = SiteModelPricingSettings & {
   name: string;
@@ -28,88 +33,6 @@ interface SiteFormProps {
   onSubmit: (data: Record<string, unknown>) => void;
   saving: boolean;
   availableModels?: AvailableSiteModelOption[];
-}
-
-type CheckboxField = {
-  name: string;
-  label: string;
-  description?: string;
-};
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset className="ld-card-light p-5">
-      <legend className="px-1 text-lg font-semibold text-[var(--ink)]">{title}</legend>
-      {description && <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{description}</p>}
-      <div className="mt-5 space-y-5">{children}</div>
-    </fieldset>
-  );
-}
-
-function TextField({
-  name,
-  label,
-  type = "text",
-  required = false,
-  defaultValue,
-  placeholder,
-}: {
-  name: string;
-  label: string;
-  type?: string;
-  required?: boolean;
-  defaultValue?: string;
-  placeholder?: string;
-}) {
-  return (
-    <div>
-      <label htmlFor={name} className="ld-label">
-        {label}
-        {required && <span className="text-[var(--primary)]"> *</span>}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        defaultValue={defaultValue || ""}
-        placeholder={placeholder}
-        className="ld-input mt-2"
-      />
-    </div>
-  );
-}
-
-function CheckboxGroup({ fields, data }: { fields: CheckboxField[]; data: Record<string, unknown> }) {
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {fields.map((field) => (
-        <label
-          key={field.name}
-          className="flex gap-3 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3"
-        >
-          <input
-            name={field.name}
-            type="checkbox"
-            defaultChecked={!!data[field.name]}
-            className="mt-1 size-4 accent-[var(--primary)]"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-[var(--ink)]">{field.label}</span>
-            {field.description && <span className="ld-helper mt-1 block">{field.description}</span>}
-          </span>
-        </label>
-      ))}
-    </div>
-  );
 }
 
 function normalizeOverride(value: unknown): boolean | null {
@@ -486,29 +409,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
     e.preventDefault();
     const form = new FormData(e.currentTarget);
 
-    const data: Record<string, unknown> = {
-      name: form.get("name"),
-      url: form.get("url"),
-      description: form.get("description") || null,
-      adminProfileUrl: form.get("adminProfileUrl") || null,
-      discussionUrl: form.get("discussionUrl") || null,
-      hasCheckIn: form.get("hasCheckIn") === "on",
-      autoCheckIn: form.get("autoCheckIn") === "on",
-      checkInUrl: form.get("checkInUrl") || null,
-      supportsClaudeCode: form.get("supportsClaudeCode") === "on",
-      supportsCodex: form.get("supportsCodex") === "on",
-      supportsImmersiveTranslation: form.get("supportsImmersiveTranslation") === "on",
-      welfareUrl: form.get("welfareUrl") || null,
-      statusUrl: form.get("statusUrl") || null,
-      hasRateLimit: form.get("hasRateLimit") === "on",
-      rateLimitInfo: form.get("rateLimitInfo") || null,
-      hasActivityRequirement: form.get("hasActivityRequirement") === "on",
-      activityRequirementInfo: form.get("activityRequirementInfo") || null,
-      isActive: form.get("isActive") === "on",
-      siteModels: siteModelItems,
-    };
-
-    onSubmit(data);
+    onSubmit(buildSiteFormPayload(form, siteModelItems));
   }
 
   const d = initialData || {};
@@ -556,6 +457,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
       <Section title="签到" description="记录站点是否需要签到，以及是否支持自动签到。">
         <CheckboxGroup
           data={d}
+          columnsClassName="md:grid-cols-2"
           fields={[
             { name: "hasCheckIn", label: "有签到", description: "公开卡片会显示签到能力。" },
             { name: "autoCheckIn", label: "支持自动签到", description: "用于区分手动和自动签到站点。" },
@@ -567,6 +469,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
       <Section title="功能支持" description="标注站点可用于哪些 AI 工具或使用场景。">
         <CheckboxGroup
           data={d}
+          columnsClassName="md:grid-cols-2"
           fields={[
             { name: "supportsClaudeCode", label: "Claude Code" },
             { name: "supportsCodex", label: "Codex" },
@@ -713,6 +616,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
       <Section title="限制说明" description="把限速和活跃度规则写在卡片上，减少误用。">
         <CheckboxGroup
           data={d}
+          columnsClassName="md:grid-cols-2"
           fields={[
             { name: "hasRateLimit", label: "有限速", description: "站点存在频率、额度或并发限制。" },
             { name: "hasActivityRequirement", label: "有活跃度要求", description: "站点对账号活跃度有要求。" },
@@ -737,15 +641,12 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
       <Section title="发布状态">
         <CheckboxGroup
           data={{ ...d, isActive: d.isActive !== false }}
+          columnsClassName="md:grid-cols-2"
           fields={[{ name: "isActive", label: "站点活跃", description: "只有活跃站点会出现在公开目录中。" }]}
         />
       </Section>
 
-      <div className="sticky bottom-4 z-10 rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-3 shadow-[var(--shadow-soft)] backdrop-blur">
-        <button type="submit" disabled={saving} className="ld-button-primary w-full">
-          {saving ? "保存中..." : "保存"}
-        </button>
-      </div>
+      <FormSubmitBar saving={saving} idleLabel="保存" />
     </form>
   );
 }

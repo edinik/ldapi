@@ -1,10 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import * as schema from "@/db/schema";
 import { appSettings } from "@/db/schema";
+import type { AppDb } from "@/db/types";
 import type { ParsedAiSettings, StoredAiSettings } from "@/lib/ai-settings";
-
-type AppDb = BetterSQLite3Database<typeof schema>;
 
 const keys = {
   baseUrl: "ai.base_url",

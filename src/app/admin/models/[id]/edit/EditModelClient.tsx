@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ModelForm from "@/components/ModelForm";
+import { requestJson } from "@/lib/admin/json-mutation";
+import { useJsonMutation } from "@/lib/admin/use-json-mutation";
 
 interface Props {
   model: Record<string, unknown> & { id: number; name: string };
@@ -10,32 +11,25 @@ interface Props {
 
 export default function EditModelClient({ model }: Props) {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  const { pending: saving, mutate } = useJsonMutation();
 
   async function handleSubmit(data: Record<string, unknown>) {
-    setSaving(true);
-    const res = await fetch(`/api/models/${model.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const res = await mutate(`/api/models/${model.id}`, "PUT", data);
 
     if (res.ok) {
       router.push("/admin/models");
     }
-
-    setSaving(false);
   }
 
   async function handleDisable() {
     if (!confirm("确定要停用此模型吗？它不会从站点关联中硬删除。")) return;
-    await fetch(`/api/models/${model.id}`, { method: "DELETE" });
+    await requestJson(`/api/models/${model.id}`, { method: "DELETE" });
     router.push("/admin/models");
   }
 
   async function handleDelete() {
     if (!confirm("确定要永久删除此模型吗？此操作不可恢复，关联的站点配置也将被移除。")) return;
-    await fetch(`/api/models/${model.id}?hard=true`, { method: "DELETE" });
+    await requestJson(`/api/models/${model.id}?hard=true`, { method: "DELETE" });
     router.push("/admin/models");
   }
 

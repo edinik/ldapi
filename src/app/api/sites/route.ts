@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { sites } from "@/db/schema";
 import { requireAuth } from "@/lib/session";
-import { getSiteModelPayloads, syncSiteModels } from "@/lib/site-model-payload";
+import { getSiteModelPayloads } from "@/lib/site-model-payload";
+import { createSite, type SiteWrite } from "@/server/admin/sites";
 
 export async function GET() {
   const allSites = await db.query.sites.findMany({
@@ -31,11 +31,7 @@ export async function POST(req: NextRequest) {
   const { modelNames, siteModels: siteModelPayloads, ...siteData } = body;
   const modelsToSync = getSiteModelPayloads({ modelNames, siteModels: siteModelPayloads });
 
-  const [newSite] = await db.insert(sites).values(siteData).returning();
-
-  if (modelsToSync.length > 0) {
-    await syncSiteModels(newSite.id, modelsToSync);
-  }
+  const newSite = await createSite(db, siteData as SiteWrite, modelsToSync);
 
   return NextResponse.json(newSite, { status: 201 });
 }
