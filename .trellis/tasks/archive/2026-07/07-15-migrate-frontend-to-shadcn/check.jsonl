@@ -1,0 +1,10 @@
+{"file": ".trellis/tasks/07-15-migrate-frontend-to-shadcn/prd.md", "reason": "对照验收标准检查迁移完成度"}
+{"file": ".trellis/tasks/07-15-migrate-frontend-to-shadcn/design.md", "reason": "对照目录所有权、主题策略与服务端/客户端边界"}
+{"file": ".trellis/tasks/07-15-migrate-frontend-to-shadcn/implement.md", "reason": "对照实施清单、验证命令与回滚点"}
+{"file": ".trellis/tasks/07-15-migrate-frontend-to-shadcn/research/shadcn-migration.md", "reason": "对照组件映射与 FormData/交互风险项"}
+{"file": ".trellis/spec/frontend/styling-and-accessibility.md", "reason": "确认规范已切到 shadcn 语义 token，且旧 ld-* 指令已清除"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "确认 ui/forms 所有权与组合规则"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "确认 components/ui 与 utils 归属已写入"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "确认表单字段与负载契约未改"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "确认通用 UI 所有者不再指向 ld-*"}
+{"file": ".trellis/spec/testing/test-patterns.md", "reason": "对照 check/build 与测试层级要求"}
