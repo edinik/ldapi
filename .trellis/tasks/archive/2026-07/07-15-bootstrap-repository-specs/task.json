@@ -1,0 +1,33 @@
+{
+  "id": "bootstrap-repository-specs",
+  "name": "bootstrap-repository-specs",
+  "title": "Bootstrap repository coding specs",
+  "description": "Audit and refresh repository-backed Trellis coding specs across frontend, backend, testing, and operations.",
+  "status": "completed",
+  "dev_type": "docs",
+  "scope": ".trellis/spec",
+  "package": null,
+  "priority": "P2",
+  "creator": "edinik",
+  "assignee": "edinik",
+  "createdAt": "2026-07-15",
+  "completedAt": "2026-07-15",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    ".trellis/spec/",
+    "src/",
+    "tests/",
+    "scripts/",
+    "Dockerfile",
+    "docker-compose.yml"
+  ],
+  "notes": "Refresh the completed frontend bootstrap and add missing full-stack boundaries without modifying product source code.",
+  "meta": {}
+}
