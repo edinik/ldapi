@@ -27,7 +27,9 @@ rg -n "准备修改的值或字段" .
 | 实体数据库写入 | `src/server/admin/*.ts` |
 | 目录查询与投影 | `src/server/directory/` |
 | 数据库类型 | `src/db/types.ts` |
-| 设计变量和通用控件 | `src/app/globals.css` |
+| 设计 token 与 shadcn 主题 | `src/app/globals.css`、`components.json` |
+| 通用 UI 原语 | `src/components/ui/` |
+| 共享表单组合 | `src/components/forms/` |
 
 ## 抽取还是保持局部
 
