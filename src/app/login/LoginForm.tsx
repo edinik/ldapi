@@ -1,8 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 interface LoginFormProps {
   turnstileSiteKey?: string;
@@ -47,48 +51,27 @@ export function LoginForm({ turnstileSiteKey }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-      <div>
-        <label htmlFor="username" className="ld-label">
-          用户名
-        </label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          required
-          autoComplete="username"
-          className="ld-input mt-2"
-        />
-      </div>
-      <div>
-        <label htmlFor="password" className="ld-label">
-          密码
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="ld-input mt-2"
-        />
-      </div>
-      <div>
-        <label htmlFor="totpCode" className="ld-label">
-          TOTP 验证码
-        </label>
-        <input
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Field>
+        <FieldLabel htmlFor="username">用户名</FieldLabel>
+        <Input id="username" name="username" type="text" required autoComplete="username" />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="password">密码</FieldLabel>
+        <Input id="password" name="password" type="password" required autoComplete="current-password" />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="totpCode">TOTP 验证码</FieldLabel>
+        <Input
           id="totpCode"
           name="totpCode"
           type="text"
           inputMode="numeric"
           pattern="[0-9 ]{6,8}"
           autoComplete="one-time-code"
-          className="ld-input mt-2"
         />
-        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">启用两步验证后填写 6 位动态验证码。</p>
-      </div>
+        <FieldDescription>启用两步验证后填写 6 位动态验证码。</FieldDescription>
+      </Field>
       {turnstileSiteKey && (
         <div className="flex justify-center">
           <Turnstile
@@ -107,13 +90,13 @@ export function LoginForm({ turnstileSiteKey }: LoginFormProps) {
         </div>
       )}
       {error && (
-        <p className="rounded-lg border border-[rgba(198,69,69,0.24)] bg-[rgba(198,69,69,0.08)] px-3 py-2 text-sm text-[var(--error)]">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
-      <button type="submit" disabled={loading} className="ld-button-primary w-full">
+      <Button type="submit" disabled={loading} className="w-full" size="lg">
         {loading ? "登录中..." : "登录"}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -1,6 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   filterResources,
   getResourceTagOptions,
@@ -14,14 +26,6 @@ const typeFilters: { value: ResourceTypeFilter; label: string }[] = [
   { value: "tutorial", label: "LinuxDo 教程" },
 ];
 
-function toggleTag(selected: string[], tag: string) {
-  if (selected.includes(tag)) {
-    return selected.filter((item) => item !== tag);
-  }
-
-  return [...selected, tag];
-}
-
 function ResourceLinks({ resource }: { resource: DirectoryResource }) {
   const links = [
     { label: "GitHub", url: resource.githubUrl },
@@ -33,9 +37,15 @@ function ResourceLinks({ resource }: { resource: DirectoryResource }) {
   if (links.length === 0) return null;
 
   return (
-    <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-[var(--hairline-soft)] pt-5 text-sm">
+    <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-5 text-sm">
       {links.map((link) => (
-        <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" className="ld-link">
+        <a
+          key={link.label}
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+        >
           {link.label}
         </a>
       ))}
@@ -45,44 +55,49 @@ function ResourceLinks({ resource }: { resource: DirectoryResource }) {
 
 function ResourceCard({ resource }: { resource: DirectoryResource }) {
   return (
-    <article className="ld-card flex min-h-full flex-col p-6">
-      <div className="flex items-start justify-between gap-4">
+    <Card className="flex min-h-full flex-col">
+      <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
         <div>
           <div className="mb-2">
-            <span className={resource.type === "tool" ? "ld-badge ld-badge-dark" : "ld-badge ld-badge-coral"}>
+            <Badge variant={resource.type === "tool" ? "default" : "secondary"}>
               {resource.type === "tool" ? "工具项目" : "教程"}
-            </span>
+            </Badge>
           </div>
-          <h3 className="text-xl font-semibold text-[var(--ink)]">{resource.title}</h3>
+          <CardTitle className="text-xl">{resource.title}</CardTitle>
         </div>
         {resource.linuxdoUrl && (
-          <a href={resource.linuxdoUrl} target="_blank" rel="noopener noreferrer" className="ld-button-secondary shrink-0 px-3 py-2 text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            render={<a href={resource.linuxdoUrl} target="_blank" rel="noopener noreferrer" />}
+          >
             {resource.type === "tutorial" ? "阅读" : "讨论"}
-          </a>
+          </Button>
         )}
-      </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col gap-5">
+        {resource.description && <p className="text-sm leading-6 text-muted-foreground">{resource.description}</p>}
 
-      {resource.description && <p className="mt-4 text-sm leading-6 text-[var(--body)]">{resource.description}</p>}
+        {resource.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {resource.tags.map((tag) => (
+              <Badge key={tag} variant="outline">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-      {resource.tags.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          {resource.tags.map((tag) => (
-            <span key={tag} className="ld-badge">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
+        {resource.recommendation && (
+          <div className="rounded-lg bg-muted/60 p-3 text-sm leading-6 text-muted-foreground">
+            <p className="text-xs font-semibold text-muted-foreground">推荐理由</p>
+            <p className="mt-1 text-foreground">{resource.recommendation}</p>
+          </div>
+        )}
 
-      {resource.recommendation && (
-        <div className="mt-5 rounded-lg bg-[rgba(250,249,245,0.58)] p-3 text-sm leading-6 text-[var(--body)]">
-          <p className="text-xs font-semibold text-[var(--muted)]">推荐理由</p>
-          <p className="mt-1">{resource.recommendation}</p>
-        </div>
-      )}
-
-      <ResourceLinks resource={resource} />
-    </article>
+        <ResourceLinks resource={resource} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -93,8 +108,8 @@ function ResourceSection({ title, resources }: { title: string; resources: Direc
     <section>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-[var(--ink)]">{title}</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">{resources.length} 条匹配资源</p>
+          <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{resources.length} 条匹配资源</p>
         </div>
       </div>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -127,91 +142,94 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
 
   if (resources.length === 0) {
     return (
-      <div className="ld-card-light p-10 text-center">
-        <p className="ld-display text-3xl text-[var(--ink)]">暂无资源数据</p>
-        <p className="mt-3 text-[var(--muted)]">登录后台后可以添加工具项目或 LinuxDo 教程帖。</p>
-      </div>
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyTitle className="text-3xl font-semibold tracking-tight">暂无资源数据</EmptyTitle>
+          <EmptyDescription>登录后台后可以添加工具项目或 LinuxDo 教程帖。</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div className="ld-filter-panel">
-        <label className="block">
-          <span className="ld-filter-label">搜索</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="ld-input mt-2"
-            placeholder="搜索标题、标签、链接、推荐理由..."
-          />
-        </label>
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold text-foreground">搜索</span>
+            <Input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="搜索标题、标签、链接、推荐理由..."
+            />
+          </label>
 
-        <div className="mt-4">
-          <p className="ld-filter-label">类型</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {typeFilters.map((filter) => {
-              const active = selectedType === filter.value;
-
-              return (
-                <button
-                  key={filter.value}
-                  type="button"
-                  className={active ? "ld-filter-chip ld-filter-chip-active" : "ld-filter-chip"}
-                  aria-pressed={active}
-                  onClick={() => setSelectedType(filter.value)}
-                >
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">类型</p>
+            <ToggleGroup
+              value={[selectedType]}
+              onValueChange={(values) => {
+                const next = values[values.length - 1] as ResourceTypeFilter | undefined;
+                if (next) setSelectedType(next);
+              }}
+              variant="outline"
+              spacing={2}
+              className="flex flex-wrap"
+            >
+              {typeFilters.map((filter) => (
+                <ToggleGroupItem key={filter.value} value={filter.value} className="rounded-full px-3">
                   {filter.label}
-                </button>
-              );
-            })}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </div>
-        </div>
 
-        {tagOptions.length > 0 && (
-          <div className="mt-4">
-            <p className="ld-filter-label">标签</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {tagOptions.map((tag) => {
-                const active = selectedTags.includes(tag);
-
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={active ? "ld-filter-chip ld-filter-chip-active" : "ld-filter-chip"}
-                    aria-pressed={active}
-                    onClick={() => setSelectedTags((current) => toggleTag(current, tag))}
-                  >
+          {tagOptions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground">标签</p>
+              <ToggleGroup
+                multiple
+                value={selectedTags}
+                onValueChange={setSelectedTags}
+                variant="outline"
+                spacing={2}
+                className="flex flex-wrap"
+              >
+                {tagOptions.map((tag) => (
+                  <ToggleGroupItem key={tag} value={tag} className="rounded-full px-3">
                     {tag}
-                  </button>
-                );
-              })}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             </div>
-          </div>
-        )}
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline-soft)] pt-4">
-          <p className="text-sm text-[var(--muted)]">
-            匹配 <span className="font-semibold text-[var(--ink)]">{filteredResources.length}</span> / {resources.length} 条资源
-          </p>
-          {hasFilters && (
-            <button type="button" className="ld-button-secondary min-h-0 px-3 py-2 text-xs" onClick={clearFilters}>
-              清除筛选
-            </button>
           )}
-        </div>
-      </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <p className="text-sm text-muted-foreground">
+              匹配 <span className="font-semibold text-foreground">{filteredResources.length}</span> / {resources.length} 条资源
+            </p>
+            {hasFilters && (
+              <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+                清除筛选
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {filteredResources.length === 0 ? (
-        <div className="ld-card-light p-10 text-center">
-          <p className="ld-display text-3xl text-[var(--ink)]">没有找到匹配资源</p>
-          <p className="mt-3 text-[var(--muted)]">调整关键词、类型或标签筛选后再试。</p>
-          <button type="button" className="ld-button-primary mt-6" onClick={clearFilters}>
-            清除筛选
-          </button>
-        </div>
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyTitle className="text-3xl font-semibold tracking-tight">没有找到匹配资源</EmptyTitle>
+            <EmptyDescription>调整关键词、类型或标签筛选后再试。</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button type="button" onClick={clearFilters}>
+              清除筛选
+            </Button>
+          </EmptyContent>
+        </Empty>
       ) : (
         <div className="space-y-10">
           {selectedType !== "tutorial" && <ResourceSection title="工具项目" resources={toolResources} />}

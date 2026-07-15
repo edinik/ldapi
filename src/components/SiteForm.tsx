@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { filterAvailableSiteModels, type AvailableSiteModelOption } from "@/lib/site-model-options";
-import { parseReasoningEffortLevels, reasoningEffortLevels, type ReasoningEffortLevel } from "@/lib/site-model-capabilities";
+import {
+  parseReasoningEffortLevels,
+  reasoningEffortLevels,
+  type ReasoningEffortLevel,
+} from "@/lib/site-model-capabilities";
 import {
   normalizeStoredSiteModelPricing,
   pricingModes,
@@ -16,6 +20,27 @@ import { FormSection as Section } from "@/components/forms/FormSection";
 import { FormTextField as TextField } from "@/components/forms/FormTextField";
 import { FormCheckboxGroup as CheckboxGroup } from "@/components/forms/FormCheckboxGroup";
 import { FormSubmitBar } from "@/components/forms/FormSubmitBar";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type SiteModelFormItem = SiteModelPricingSettings & {
   name: string;
@@ -61,7 +86,8 @@ function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteM
         if (!item || typeof item !== "object") return null;
         const record = item as Record<string, unknown>;
         const model = record.model as Record<string, unknown> | undefined;
-        const name = typeof model?.name === "string" ? model.name : typeof record.name === "string" ? record.name : "";
+        const name =
+          typeof model?.name === "string" ? model.name : typeof record.name === "string" ? record.name : "";
         if (!name) return null;
 
         return {
@@ -79,12 +105,23 @@ function getInitialSiteModels(initialData?: SiteFormProps["initialData"]): SiteM
           rating: typeof record.rating === "string" ? record.rating || null : null,
           ...normalizeStoredSiteModelPricing({
             pricingMode: typeof record.pricingMode === "string" ? (record.pricingMode as PricingMode) : undefined,
-            usagePriceSource: typeof record.usagePriceSource === "string" ? (record.usagePriceSource as UsagePriceSource) : undefined,
+            usagePriceSource:
+              typeof record.usagePriceSource === "string"
+                ? (record.usagePriceSource as UsagePriceSource)
+                : undefined,
             priceMultiplier: typeof record.priceMultiplier === "number" ? record.priceMultiplier : undefined,
-            inputCostPerMTokensOverride: typeof record.inputCostPerMTokensOverride === "number" ? record.inputCostPerMTokensOverride : null,
-            outputCostPerMTokensOverride: typeof record.outputCostPerMTokensOverride === "number" ? record.outputCostPerMTokensOverride : null,
-            cacheReadCostPerMTokensOverride: typeof record.cacheReadCostPerMTokensOverride === "number" ? record.cacheReadCostPerMTokensOverride : null,
-            cacheWriteCostPerMTokensOverride: typeof record.cacheWriteCostPerMTokensOverride === "number" ? record.cacheWriteCostPerMTokensOverride : null,
+            inputCostPerMTokensOverride:
+              typeof record.inputCostPerMTokensOverride === "number" ? record.inputCostPerMTokensOverride : null,
+            outputCostPerMTokensOverride:
+              typeof record.outputCostPerMTokensOverride === "number" ? record.outputCostPerMTokensOverride : null,
+            cacheReadCostPerMTokensOverride:
+              typeof record.cacheReadCostPerMTokensOverride === "number"
+                ? record.cacheReadCostPerMTokensOverride
+                : null,
+            cacheWriteCostPerMTokensOverride:
+              typeof record.cacheWriteCostPerMTokensOverride === "number"
+                ? record.cacheWriteCostPerMTokensOverride
+                : null,
             perRequestCost: typeof record.perRequestCost === "number" ? record.perRequestCost : null,
             pricingNotes: typeof record.pricingNotes === "string" ? record.pricingNotes : null,
           }),
@@ -119,50 +156,25 @@ function MiniSelect({
   options: { value: string; label: string }[];
   onChange: (value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.value === value) ?? options[0];
-
+  const selectValue = value || "none";
   return (
-    <div className="relative block">
-      <span className="ld-filter-label">{label}</span>
-      <button
-        type="button"
-        className="ld-input mt-2 flex w-full items-center justify-between text-left text-sm font-semibold"
-        onClick={() => setOpen((c) => !c)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
+    <div className="block space-y-2">
+      <span className="text-xs font-semibold text-foreground">{label}</span>
+      <Select
+        value={selectValue}
+        onValueChange={(next) => onChange(next === "none" ? "" : (next ?? ""))}
       >
-        <span className="truncate">{selected.label}</span>
-        <span className="ml-2 text-[var(--muted)]">⌄</span>
-      </button>
-      {open && (
-        <div
-          className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
-          role="listbox"
-        >
-          {options.map((option) => {
-            const active = option.value === value;
-            return (
-              <button
-                key={option.value || "__empty"}
-                type="button"
-                className={
-                  active
-                    ? "flex min-h-9 w-full items-center rounded-md bg-[var(--surface-card)] px-3 text-left text-sm font-semibold text-[var(--ink)]"
-                    : "flex min-h-9 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
-                }
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { onChange(option.value); setOpen(false); }}
-                role="option"
-                aria-selected={active}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        <SelectTrigger className="w-full text-sm font-semibold">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value || "none"} value={option.value || "none"}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -179,9 +191,9 @@ function NumberInput({
   placeholder?: string;
 }) {
   return (
-    <label className="block">
-      <span className="ld-filter-label">{label}</span>
-      <input
+    <label className="block space-y-2">
+      <span className="text-xs font-semibold text-foreground">{label}</span>
+      <Input
         type="number"
         step="any"
         value={value ?? ""}
@@ -190,7 +202,6 @@ function NumberInput({
           const next = event.target.value;
           onChange(next === "" ? null : Number(next));
         }}
-        className="ld-input mt-2"
       />
     </label>
   );
@@ -252,43 +263,32 @@ function ReasoningEffortOverride({
   const enabled = value !== null;
   const selected = value ?? [];
 
-  function toggle(level: ReasoningEffortLevel) {
-    if (!enabled) return;
-    if (selected.includes(level)) {
-      onChange(selected.filter((item) => item !== level));
-    } else {
-      onChange([...selected, level]);
-    }
-  }
-
   return (
-    <div className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.58)] p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <label className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(event) => onChange(event.target.checked ? [] : null)}
-          className="mt-1 size-4 accent-[var(--primary)]"
-        />
+        <Checkbox checked={enabled} onCheckedChange={(checked) => onChange(checked === true ? [] : null)} />
         <span>
-          <span className="block text-sm font-semibold text-[var(--ink)]">覆盖推理强度</span>
-          <span className="ld-helper mt-1 block">不勾选时继承模型默认；勾选但不选强度表示本站不可调强度。</span>
+          <span className="block text-sm font-semibold text-foreground">覆盖推理强度</span>
+          <span className="mt-1 block text-sm text-muted-foreground">
+            不勾选时继承模型默认；勾选但不选强度表示本站不可调强度。
+          </span>
         </span>
       </label>
       {enabled && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <ToggleGroup
+          multiple
+          value={selected}
+          onValueChange={(values) => onChange(values as ReasoningEffortLevel[])}
+          variant="outline"
+          spacing={2}
+          className="mt-3 flex flex-wrap"
+        >
           {reasoningEffortLevels.map((level) => (
-            <button
-              key={level}
-              type="button"
-              className={selected.includes(level) ? "ld-filter-chip ld-filter-chip-active" : "ld-filter-chip"}
-              onClick={() => toggle(level)}
-              aria-pressed={selected.includes(level)}
-            >
+            <ToggleGroupItem key={level} value={level} className="rounded-full px-3">
               {level}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       )}
     </div>
   );
@@ -302,9 +302,9 @@ function PricingEditor({
   onChange: <K extends keyof Omit<SiteModelFormItem, "name">>(key: K, value: SiteModelFormItem[K]) => void;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.58)] p-3">
-      <p className="text-sm font-semibold text-[var(--ink)]">价格</p>
-      <p className="ld-helper mt-1">公开目录会显示最终输入/输出价或每次价格。</p>
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
+      <p className="text-sm font-semibold text-foreground">价格</p>
+      <p className="mt-1 text-sm text-muted-foreground">公开目录会显示最终输入/输出价或每次价格。</p>
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <MiniSelect
           label="计费模式"
@@ -364,13 +364,13 @@ function PricingEditor({
       )}
 
       {item.pricingMode === "custom" && (
-        <label className="mt-3 block">
-          <span className="ld-filter-label">价格说明</span>
-          <textarea
+        <label className="mt-3 block space-y-2">
+          <span className="text-xs font-semibold text-foreground">价格说明</span>
+          <Textarea
             value={item.pricingNotes ?? ""}
             rows={3}
             onChange={(event) => onChange("pricingNotes", event.target.value || null)}
-            className="ld-input mt-2 min-h-20 resize-y"
+            className="min-h-20"
           />
         </label>
       )}
@@ -380,7 +380,6 @@ function PricingEditor({
 
 export default function SiteForm({ initialData, onSubmit, saving, availableModels = [] }: SiteFormProps) {
   const [modelInput, setModelInput] = useState("");
-  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [siteModelItems, setSiteModelItems] = useState<SiteModelFormItem[]>(() => getInitialSiteModels(initialData));
   const modelOptions = filterAvailableSiteModels(
     availableModels,
@@ -394,14 +393,17 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
       setSiteModelItems([...siteModelItems, createSiteModelFormItem(name)]);
     }
     setModelInput("");
-    setModelDropdownOpen(false);
   }
 
   function removeModel(name: string) {
     setSiteModelItems(siteModelItems.filter((item) => item.name !== name));
   }
 
-  function updateModelOverride<K extends keyof Omit<SiteModelFormItem, "name">>(name: string, key: K, value: SiteModelFormItem[K]) {
+  function updateModelOverride<K extends keyof Omit<SiteModelFormItem, "name">>(
+    name: string,
+    key: K,
+    value: SiteModelFormItem[K],
+  ) {
     setSiteModelItems((current) => current.map((item) => (item.name === name ? { ...item, [key]: value } : item)));
   }
 
@@ -421,18 +423,16 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
           <TextField name="name" label="站点名称" required defaultValue={d.name as string} />
           <TextField name="url" label="站点地址" type="url" required defaultValue={d.url as string} />
         </div>
-        <div>
-          <label htmlFor="description" className="ld-label">
-            描述
-          </label>
-          <textarea
+        <Field>
+          <FieldLabel htmlFor="description">描述</FieldLabel>
+          <Textarea
             id="description"
             name="description"
             rows={3}
             defaultValue={(d.description as string) || ""}
-            className="ld-input mt-2 min-h-24 resize-y"
+            className="min-h-24"
           />
-        </div>
+        </Field>
       </Section>
 
       <Section title="LinuxDo 相关" description="用于追溯站长主页、讨论主贴和社区来源。">
@@ -480,73 +480,63 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
 
       <Section title="支持的模型" description="搜索并选择已录入模型；也可以输入新模型名称后添加。">
         <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <input
-              value={modelInput}
-              onChange={(e) => {
-                setModelInput(e.target.value);
-                setModelDropdownOpen(true);
-              }}
-              onFocus={() => setModelDropdownOpen(true)}
-              onBlur={() => window.setTimeout(() => setModelDropdownOpen(false), 120)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
+          <Combobox<AvailableSiteModelOption>
+            items={modelOptions}
+            filter={null}
+            inputValue={modelInput}
+            itemToStringLabel={(model) => model.name}
+            onInputValueChange={(next, { reason }) => {
+              if (reason !== "item-press") setModelInput(next);
+            }}
+            onValueChange={(next) => {
+              if (next) addModel(next.name);
+            }}
+          >
+            <ComboboxInput
+              placeholder="搜索模型名称、开发者或模型 ID"
+              autoComplete="off"
+              className="flex-1"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.currentTarget.getAttribute("aria-activedescendant")) {
+                  event.preventDefault();
                   addModel();
                 }
               }}
-              placeholder="搜索模型名称、开发者或模型 ID"
-              className="ld-input flex-1"
-              role="combobox"
-              aria-expanded={modelDropdownOpen}
-              aria-controls="site-model-options"
-              autoComplete="off"
             />
-            {modelDropdownOpen && (modelInput.trim() || modelOptions.length > 0) && (
-              <div
-                id="site-model-options"
-                className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
-                role="listbox"
-              >
-                {modelOptions.length > 0 ? (
-                  modelOptions.map((model) => (
-                    <button
-                      key={model.name}
-                      type="button"
-                      className="flex min-h-12 w-full flex-col items-start justify-center rounded-md px-3 text-left hover:bg-[var(--surface-card)]"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => addModel(model.name)}
-                      role="option"
-                      aria-selected="false"
-                    >
-                      <span className="text-sm font-semibold text-[var(--body-strong)]">{model.name}</span>
-                      <span className="mt-0.5 text-xs text-[var(--muted)]">
+            <ComboboxContent>
+              <ComboboxEmpty>没有匹配模型，可直接添加为新模型名称。</ComboboxEmpty>
+              <ComboboxList>
+                {(model: AvailableSiteModelOption) => (
+                  <ComboboxItem key={model.name} value={model}>
+                    <span className="flex flex-col items-start">
+                      <span className="text-sm font-semibold text-foreground">{model.name}</span>
+                      <span className="mt-0.5 text-xs text-muted-foreground">
                         {[model.developer, model.modelId].filter(Boolean).join(" / ") || "未填写开发者或模型 ID"}
                       </span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-3 py-2 text-sm text-[var(--muted)]">没有匹配模型，可直接添加为新模型名称。</p>
+                    </span>
+                  </ComboboxItem>
                 )}
-              </div>
-            )}
-          </div>
-          <button type="button" onClick={() => addModel()} className="ld-button-secondary">
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          <Button type="button" variant="outline" onClick={() => addModel()}>
             添加
-          </button>
+          </Button>
         </div>
         {siteModelItems.length > 0 && (
           <div className="grid gap-3">
             {siteModelItems.map((item) => (
-              <div key={item.name} className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-4">
+              <div key={item.name} className="rounded-lg border border-border bg-muted/40 p-4">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <div>
-                    <p className="font-semibold text-[var(--ink)]">{item.name}</p>
-                    <p className="ld-helper mt-1">按站点覆盖模型能力；未设置时继承模型管理中的默认能力。</p>
+                    <p className="font-semibold text-foreground">{item.name}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      按站点覆盖模型能力；未设置时继承模型管理中的默认能力。
+                    </p>
                   </div>
-                  <button type="button" onClick={() => removeModel(item.name)} className="ld-button-danger min-h-0 px-3 py-2 text-xs">
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeModel(item.name)}>
                     移除
-                  </button>
+                  </Button>
                 </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
                   <CapabilityOverrideSelect
@@ -595,10 +585,7 @@ export default function SiteForm({ initialData, onSubmit, saving, availableModel
                   />
                 </div>
                 <div className="mt-3">
-                  <PricingEditor
-                    item={item}
-                    onChange={(key, value) => updateModelOverride(item.name, key, value)}
-                  />
+                  <PricingEditor item={item} onChange={(key, value) => updateModelOverride(item.name, key, value)} />
                 </div>
               </div>
             ))}

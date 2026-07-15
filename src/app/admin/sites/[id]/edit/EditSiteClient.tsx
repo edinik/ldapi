@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import SiteForm from "@/components/SiteForm";
+import { ConfirmAction } from "@/components/ConfirmAction";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AvailableSiteModelOption } from "@/lib/site-model-options";
 import { requestJson } from "@/lib/admin/json-mutation";
 import { useJsonMutation } from "@/lib/admin/use-json-mutation";
@@ -23,7 +25,6 @@ export default function EditSiteClient({ site, availableModels }: Props) {
   }
 
   async function handleDelete() {
-    if (!confirm("确定要删除此站点吗？")) return;
     await requestJson(`/api/sites/${site.id}`, { method: "DELETE" });
     router.push("/admin");
   }
@@ -31,15 +32,21 @@ export default function EditSiteClient({ site, availableModels }: Props) {
   return (
     <div className="space-y-5">
       <SiteForm initialData={site} onSubmit={handleSubmit} saving={saving} availableModels={availableModels} />
-      <div className="ld-card-light flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
-        <div>
-          <p className="font-semibold text-[var(--ink)]">危险操作</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">删除后该站点会从后台和公开目录中移除。</p>
-        </div>
-        <button onClick={handleDelete} className="ld-button-danger">
-          删除此站点
-        </button>
-      </div>
+      <Card>
+        <CardHeader className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <CardTitle>危险操作</CardTitle>
+            <CardDescription className="mt-1">删除后该站点会从后台和公开目录中移除。</CardDescription>
+          </div>
+          <ConfirmAction
+            triggerLabel="删除此站点"
+            title="删除站点"
+            description="确定要删除此站点吗？"
+            confirmLabel="删除"
+            onConfirm={handleDelete}
+          />
+        </CardHeader>
+      </Card>
     </div>
   );
 }

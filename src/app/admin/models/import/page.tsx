@@ -7,14 +7,14 @@ export default async function ImportModelsPage() {
   await requireAdmin();
 
   return (
-    <main className="ld-page min-h-screen py-8">
-      <div className="ld-container">
-        <header className="mb-8 border-b border-[var(--hairline)] pb-6">
-          <Link href="/admin/models" className="ld-link text-sm">
+    <main className="min-h-screen bg-background py-8 text-foreground">
+      <div className="mx-auto w-[min(100%-2rem,1200px)]">
+        <header className="mb-8 border-b border-border pb-6">
+          <Link href="/admin/models" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
             返回模型管理
           </Link>
-          <h1 className="ld-display mt-4 text-5xl leading-tight text-[var(--ink)]">导入模型</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground">导入模型</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
             使用 JSON 模板批量导入模型资料。建议先让 AI 根据官网整理内容，再在这里预检和导入。
           </p>
         </header>

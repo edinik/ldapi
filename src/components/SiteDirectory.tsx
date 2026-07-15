@@ -1,8 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type CapabilityKey, type DirectorySite, filterSites } from "@/lib/site-directory-filter";
 import { FilterSelect } from "@/components/FilterSelect";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { type CapabilityKey, type DirectorySite, filterSites } from "@/lib/site-directory-filter";
 
 const capabilityLabels: { key: CapabilityKey; label: string; tone: string }[] = [
   { key: "hasCheckIn", label: "签到", tone: "success" },
@@ -30,126 +42,132 @@ export type SiteDirectoryItem = DirectorySite & {
   }[];
 };
 
-function badgeClass(tone: string) {
-  if (tone === "success") return "ld-badge ld-badge-success";
-  if (tone === "warning") return "ld-badge ld-badge-warning";
-  if (tone === "danger") return "ld-badge ld-badge-danger";
-  if (tone === "dark") return "ld-badge ld-badge-dark";
-  return "ld-badge";
+function badgeVariant(tone: string): "default" | "secondary" | "destructive" | "outline" {
+  if (tone === "success") return "secondary";
+  if (tone === "warning") return "outline";
+  if (tone === "danger") return "destructive";
+  if (tone === "dark") return "default";
+  return "secondary";
 }
 
-function ratingBadgeClass(rating: string) {
-  if (rating === "夯") return "ld-badge ld-badge-success";
-  if (rating === "顶级") return "ld-badge ld-badge-dark";
-  if (rating === "人上人") return "ld-badge";
-  if (rating === "NPC") return "ld-badge ld-badge-warning";
-  if (rating === "拉") return "ld-badge ld-badge-danger";
-  return "ld-badge";
-}
-
-function toggleCapability(selected: CapabilityKey[], capability: CapabilityKey) {
-  if (selected.includes(capability)) {
-    return selected.filter((item) => item !== capability);
-  }
-
-  return [...selected, capability];
+function ratingVariant(rating: string): "default" | "secondary" | "destructive" | "outline" {
+  if (rating === "夯") return "secondary";
+  if (rating === "顶级") return "default";
+  if (rating === "人上人") return "secondary";
+  if (rating === "NPC") return "outline";
+  if (rating === "拉") return "destructive";
+  return "secondary";
 }
 
 export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
   const [query, setQuery] = useState("");
   const [selectedCapabilities, setSelectedCapabilities] = useState<CapabilityKey[]>([]);
-  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedModel, setSelectedModel] = useState("all");
 
   const modelOptions = useMemo(
     () => Array.from(new Set(sites.flatMap((site) => site.models))).sort((a, b) => a.localeCompare(b)),
     [sites],
   );
   const modelFilterOptions = useMemo(
-    () => [{ value: "", label: "全部模型" }, ...modelOptions.map((model) => ({ value: model, label: model }))],
+    () => [{ value: "all", label: "全部模型" }, ...modelOptions.map((model) => ({ value: model, label: model }))],
     [modelOptions],
   );
 
   const filteredSites = useMemo(
-    () => filterSites(sites, { query, capabilities: selectedCapabilities, model: selectedModel }) as SiteDirectoryItem[],
+    () =>
+      filterSites(sites, {
+        query,
+        capabilities: selectedCapabilities,
+        model: selectedModel === "all" ? "" : selectedModel,
+      }) as SiteDirectoryItem[],
     [query, selectedCapabilities, selectedModel, sites],
   );
 
-  const hasFilters = query.trim().length > 0 || selectedCapabilities.length > 0 || selectedModel.length > 0;
+  const hasFilters = query.trim().length > 0 || selectedCapabilities.length > 0 || (selectedModel.length > 0 && selectedModel !== "all");
 
   function clearFilters() {
     setQuery("");
     setSelectedCapabilities([]);
-    setSelectedModel("");
+    setSelectedModel("all");
   }
 
   if (sites.length === 0) {
     return (
-      <div className="ld-card-light p-10 text-center">
-        <p className="ld-display text-3xl text-[var(--ink)]">暂无站点数据</p>
-        <p className="mt-3 text-[var(--muted)]">登录后台后可以添加第一条公益站记录。</p>
-      </div>
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyTitle className="text-3xl font-semibold tracking-tight">暂无站点数据</EmptyTitle>
+          <EmptyDescription>登录后台后可以添加第一条公益站记录。</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="ld-filter-panel">
-        <div className="grid gap-3 lg:grid-cols-[1fr_16rem]">
-          <label className="block">
-            <span className="ld-filter-label">搜索</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="ld-input mt-2"
-              placeholder="搜索站点、模型、URL..."
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="grid gap-3 lg:grid-cols-[1fr_16rem]">
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold text-foreground">搜索</span>
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="搜索站点、模型、URL..."
+              />
+            </label>
+
+            <FilterSelect
+              label="模型"
+              value={selectedModel || "all"}
+              options={modelFilterOptions}
+              onChange={setSelectedModel}
             />
-          </label>
-
-          <FilterSelect label="模型" value={selectedModel} options={modelFilterOptions} onChange={setSelectedModel} />
-        </div>
-
-        <div className="mt-4">
-          <p className="ld-filter-label">能力筛选</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {capabilityLabels.map(({ key, label }) => {
-              const active = selectedCapabilities.includes(key);
-
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={active ? "ld-filter-chip ld-filter-chip-active" : "ld-filter-chip"}
-                  aria-pressed={active}
-                  onClick={() => setSelectedCapabilities((current) => toggleCapability(current, key))}
-                >
-                  {label}
-                </button>
-              );
-            })}
           </div>
-        </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline-soft)] pt-4">
-          <p className="text-sm text-[var(--muted)]">
-            匹配 <span className="font-semibold text-[var(--ink)]">{filteredSites.length}</span> / {sites.length} 个站点
-          </p>
-          {hasFilters && (
-            <button type="button" className="ld-button-secondary min-h-0 px-3 py-2 text-xs" onClick={clearFilters}>
-              清除筛选
-            </button>
-          )}
-        </div>
-      </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">能力筛选</p>
+            <ToggleGroup
+              multiple
+              value={selectedCapabilities}
+              onValueChange={(values) => setSelectedCapabilities(values as CapabilityKey[])}
+              variant="outline"
+              spacing={2}
+              className="flex flex-wrap"
+            >
+              {capabilityLabels.map(({ key, label }) => (
+                <ToggleGroupItem key={key} value={key} className="rounded-full px-3">
+                  {label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <p className="text-sm text-muted-foreground">
+              匹配 <span className="font-semibold text-foreground">{filteredSites.length}</span> / {sites.length} 个站点
+            </p>
+            {hasFilters && (
+              <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+                清除筛选
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {filteredSites.length === 0 ? (
-        <div className="ld-card-light p-10 text-center">
-          <p className="ld-display text-3xl text-[var(--ink)]">没有找到匹配站点</p>
-          <p className="mt-3 text-[var(--muted)]">调整关键词、模型或能力筛选后再试。</p>
-          <button type="button" className="ld-button-primary mt-6" onClick={clearFilters}>
-            清除筛选
-          </button>
-        </div>
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyTitle className="text-3xl font-semibold tracking-tight">没有找到匹配站点</EmptyTitle>
+            <EmptyDescription>调整关键词、模型或能力筛选后再试。</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button type="button" onClick={clearFilters}>
+              清除筛选
+            </Button>
+          </EmptyContent>
+        </Empty>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredSites.map((site) => {
@@ -162,82 +180,96 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
             ].filter((link) => link.url.length > 0);
 
             return (
-              <article key={site.id} className="ld-card flex min-h-full flex-col p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-[var(--ink)]">
-                      <a href={site.url} target="_blank" rel="noopener noreferrer" className="ld-link">
+              <Card key={site.id} className="flex min-h-full flex-col">
+                <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+                  <div className="min-w-0">
+                    <CardTitle className="text-xl">
+                      <a
+                        href={site.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-primary underline-offset-4 hover:underline"
+                      >
                         {site.name}
                       </a>
-                    </h3>
-                    <p className="mt-1 break-all text-xs text-[var(--muted-soft)]">{site.url}</p>
+                    </CardTitle>
+                    <CardDescription className="mt-1 break-all">{site.url}</CardDescription>
                   </div>
-                  <a href={site.url} target="_blank" rel="noopener noreferrer" className="ld-button-secondary shrink-0 px-3 py-2 text-xs">
+                  <Button variant="outline" size="sm" render={<a href={site.url} target="_blank" rel="noopener noreferrer" />}>
                     访问
-                  </a>
-                </div>
+                  </Button>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-5">
+                  {site.description && <p className="text-sm leading-6 text-muted-foreground">{site.description}</p>}
 
-                {site.description && <p className="mt-4 text-sm leading-6 text-[var(--body)]">{site.description}</p>}
+                  <div className="flex flex-wrap gap-2">
+                    {capabilityLabels.map(({ key, label, tone }) => {
+                      if (!site[key]) return null;
+                      return (
+                        <Badge key={key} variant={badgeVariant(tone)}>
+                          {label}
+                        </Badge>
+                      );
+                    })}
+                  </div>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {capabilityLabels.map(({ key, label, tone }) => {
-                    if (!site[key]) return null;
-                    return (
-                      <span key={key} className={badgeClass(tone)}>
-                        {label}
-                      </span>
-                    );
-                  })}
-                </div>
+                  {site.models.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground">支持模型</p>
+                      <div className="mt-2 grid gap-2">
+                        {site.modelCapabilities.map((model) => (
+                          <div key={model.name} className="rounded-lg bg-muted/60 p-3">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-foreground">{model.name}</p>
+                              {model.rating && <Badge variant={ratingVariant(model.rating)}>{model.rating}</Badge>}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {model.capabilities.length === 0 && !model.rating && (
+                                <span className="text-xs text-muted-foreground">未标注</span>
+                              )}
+                              {model.capabilities.map((capability) => (
+                                <Badge key={capability} variant="outline">
+                                  {capability}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {model.pricingLabels.map((price) => (
+                                <Badge key={price} variant="outline">
+                                  {price}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                {site.models.length > 0 && (
-                  <div className="mt-5">
-                    <p className="text-xs font-semibold text-[var(--muted)]">支持模型</p>
-                    <div className="mt-2 grid gap-2">
-                      {site.modelCapabilities.map((model) => (
-                        <div key={model.name} className="rounded-lg bg-[rgba(250,249,245,0.58)] p-3">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-[var(--ink)]">{model.name}</p>
-                            {model.rating && <span className={ratingBadgeClass(model.rating)}>{model.rating}</span>}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {model.capabilities.length === 0 && !model.rating && <span className="text-xs text-[var(--muted-soft)]">未标注</span>}
-                            {model.capabilities.map((capability) => (
-                              <span key={capability} className="ld-badge bg-[rgba(250,249,245,0.7)]">
-                                {capability}
-                              </span>
-                            ))}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {model.pricingLabels.map((price) => (
-                              <span key={price} className="ld-badge bg-[rgba(250,249,245,0.7)]">
-                                {price}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                  {(site.rateLimitInfo || site.activityRequirementInfo) && (
+                    <div className="space-y-2 rounded-lg bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
+                      {site.rateLimitInfo && <p>限速：{site.rateLimitInfo}</p>}
+                      {site.activityRequirementInfo && <p>活跃要求：{site.activityRequirementInfo}</p>}
+                    </div>
+                  )}
+
+                  {links.length > 0 && (
+                    <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-5 text-sm">
+                      {links.map((link) => (
+                        <a
+                          key={link.label}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-primary underline-offset-4 hover:underline"
+                        >
+                          {link.label}
+                        </a>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {(site.rateLimitInfo || site.activityRequirementInfo) && (
-                  <div className="mt-5 space-y-2 rounded-lg bg-[rgba(250,249,245,0.58)] p-3 text-xs leading-5 text-[var(--muted)]">
-                    {site.rateLimitInfo && <p>限速：{site.rateLimitInfo}</p>}
-                    {site.activityRequirementInfo && <p>活跃要求：{site.activityRequirementInfo}</p>}
-                  </div>
-                )}
-
-                {links.length > 0 && (
-                  <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-[var(--hairline-soft)] pt-5 text-sm">
-                    {links.map((link) => (
-                      <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" className="ld-link">
-                        {link.label}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </article>
+                  )}
+                </CardContent>
+              </Card>
             );
           })}
         </div>

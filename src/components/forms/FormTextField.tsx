@@ -1,3 +1,6 @@
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+
 type FormTextFieldProps = {
   name: string;
   label: string;
@@ -25,12 +28,12 @@ export function FormTextField({
   helper,
 }: FormTextFieldProps) {
   return (
-    <div>
-      <label htmlFor={name} className="ld-label">
+    <Field>
+      <FieldLabel htmlFor={name}>
         {label}
-        {required && <span className="text-[var(--primary)]"> *</span>}
-      </label>
-      <input
+        {required && <span className="text-destructive"> *</span>}
+      </FieldLabel>
+      <Input
         id={name}
         name={name}
         type={type}
@@ -38,9 +41,8 @@ export function FormTextField({
         required={required}
         defaultValue={getStringValue(defaultValue)}
         placeholder={placeholder}
-        className="ld-input mt-2"
       />
-      {helper && <p className="ld-helper mt-2">{helper}</p>}
-    </div>
+      {helper && <FieldDescription>{helper}</FieldDescription>}
+    </Field>
   );
 }

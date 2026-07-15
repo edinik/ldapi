@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { SiteDirectory, type SiteDirectoryItem } from "@/components/SiteDirectory";
 import { ModelOverview } from "@/components/ModelOverview";
 import { ResourceDirectory } from "@/components/ResourceDirectory";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ModelDisplayItem } from "@/lib/model-display";
 import type { DirectoryResource } from "@/lib/resource-directory-filter";
 
@@ -18,48 +18,23 @@ export function HomeTabs({
   models: ModelDisplayItem[];
   resources: DirectoryResource[];
 }) {
-  const [tab, setTab] = useState<Tab>("sites");
-
   return (
-    <div>
-      <div className="flex gap-1 border-b border-[var(--hairline)]">
-        <button
-          type="button"
-          className={tab === "sites"
-            ? "border-b-2 border-[var(--ink)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-            : "border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-[var(--muted)] hover:text-[var(--body)]"
-          }
-          onClick={() => setTab("sites")}
-        >
-          站点 ({sites.length})
-        </button>
-        <button
-          type="button"
-          className={tab === "models"
-            ? "border-b-2 border-[var(--ink)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-            : "border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-[var(--muted)] hover:text-[var(--body)]"
-          }
-          onClick={() => setTab("models")}
-        >
-          模型 ({models.length})
-        </button>
-        <button
-          type="button"
-          className={tab === "resources"
-            ? "border-b-2 border-[var(--ink)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-            : "border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-[var(--muted)] hover:text-[var(--body)]"
-          }
-          onClick={() => setTab("resources")}
-        >
-          资源 ({resources.length})
-        </button>
-      </div>
+    <Tabs defaultValue={"sites" satisfies Tab}>
+      <TabsList variant="line" className="w-full justify-start">
+        <TabsTrigger value="sites">站点 ({sites.length})</TabsTrigger>
+        <TabsTrigger value="models">模型 ({models.length})</TabsTrigger>
+        <TabsTrigger value="resources">资源 ({resources.length})</TabsTrigger>
+      </TabsList>
 
-      <div className="pt-8">
-        {tab === "sites" && <SiteDirectory sites={sites} />}
-        {tab === "models" && <ModelOverview models={models} />}
-        {tab === "resources" && <ResourceDirectory resources={resources} />}
-      </div>
-    </div>
+      <TabsContent value="sites" className="pt-8">
+        <SiteDirectory sites={sites} />
+      </TabsContent>
+      <TabsContent value="models" className="pt-8">
+        <ModelOverview models={models} />
+      </TabsContent>
+      <TabsContent value="resources" className="pt-8">
+        <ResourceDirectory resources={resources} />
+      </TabsContent>
+    </Tabs>
   );
 }

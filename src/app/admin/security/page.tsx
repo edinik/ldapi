@@ -1,6 +1,12 @@
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
 import { disableTotp, confirmTotpSetup, generateTotpSetup, saveAiGenerationSettings } from "./actions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { maskSecret, resolveOpenAiCompatibleConfig } from "@/lib/ai-settings";
 import { getStoredAiSettings } from "@/lib/ai-settings-store";
 import { requireAdmin } from "@/lib/session";
@@ -48,108 +54,83 @@ export default async function AdminSecurityPage({
   const configuredApiKey = aiSettings.apiKey || process.env.AI_API_KEY || null;
 
   return (
-    <main className="ld-page min-h-screen py-8">
-      <div className="ld-container max-w-3xl">
-        <header className="border-b border-[var(--hairline)] pb-8">
-          <Link href="/admin" className="ld-link text-sm">
+    <main className="min-h-screen bg-background py-8 text-foreground">
+      <div className="mx-auto w-[min(100%-2rem,48rem)]">
+        <header className="border-b border-border pb-8">
+          <Link href="/admin" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
             返回后台
           </Link>
-          <h1 className="ld-display mt-4 text-4xl text-[var(--ink)]">安全设置</h1>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            为管理员登录增加基于时间的一次性验证码。
-          </p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">安全设置</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">为管理员登录增加基于时间的一次性验证码。</p>
         </header>
 
         {error && (
-          <p className="mt-6 rounded-lg border border-[rgba(198,69,69,0.24)] bg-[rgba(198,69,69,0.08)] px-3 py-2 text-sm text-[var(--error)]">
-            {error}
-          </p>
+          <Alert variant="destructive" className="mt-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
         {success && (
-          <p className="mt-6 rounded-lg border border-[rgba(93,184,114,0.28)] bg-[rgba(93,184,114,0.12)] px-3 py-2 text-sm text-[var(--ink)]">
-            {success}
-          </p>
+          <Alert className="mt-6">
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
         )}
 
-        <section className="ld-card-light mt-8 p-6">
-          <div className="flex flex-col justify-between gap-4 border-b border-[var(--hairline)] pb-5 sm:flex-row sm:items-center">
+        <Card className="mt-8">
+          <CardHeader className="flex flex-col justify-between gap-4 border-b sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--ink)]">TOTP 两步验证</h2>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                当前状态：{user.totpSecret ? "已启用" : "未启用"}
-              </p>
+              <CardTitle>TOTP 两步验证</CardTitle>
+              <CardDescription className="mt-1">当前状态：{user.totpSecret ? "已启用" : "未启用"}</CardDescription>
             </div>
             {user.totpSecret ? (
               <form action={disableTotp}>
-                <button type="submit" className="ld-button-secondary">
+                <Button type="submit" variant="outline">
                   停用 TOTP
-                </button>
+                </Button>
               </form>
             ) : (
               <form action={generateTotpSetup}>
-                <button type="submit" className="ld-button-primary">
-                  生成密钥
-                </button>
+                <Button type="submit">生成密钥</Button>
               </form>
             )}
-          </div>
+          </CardHeader>
 
           {totpUri && (
-            <div className="mt-6 space-y-5">
-              <div className="flex flex-col items-center gap-4 rounded-lg border border-[var(--hairline)] bg-white p-6">
-                <p className="text-sm font-medium text-[var(--ink)]">使用验证器扫描二维码</p>
+            <CardContent className="space-y-5 pt-6">
+              <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-6">
+                <p className="text-sm font-medium text-foreground">使用验证器扫描二维码</p>
                 {qrCodeDataUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={qrCodeDataUrl}
                     alt="TOTP QR Code"
                     width={256}
                     height={256}
-                    className="rounded-lg border border-[var(--hairline)]"
+                    className="rounded-lg border border-border"
                   />
                 )}
-                <p className="text-xs text-[var(--muted)]">
-                  支持 Google Authenticator、Microsoft Authenticator 等应用
-                </p>
+                <p className="text-xs text-muted-foreground">支持 Google Authenticator、Microsoft Authenticator 等应用</p>
               </div>
 
-              <div>
-                <label htmlFor="totpSecret" className="ld-label">
-                  密钥（手动输入）
-                </label>
-                <input
-                  id="totpSecret"
-                  readOnly
-                  value={user.pendingTotpSecret ?? ""}
-                  className="ld-input mt-2 font-mono text-sm"
-                />
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  如果无法扫描二维码，可以手动输入此密钥
-                </p>
-              </div>
+              <Field>
+                <FieldLabel htmlFor="totpSecret">密钥（手动输入）</FieldLabel>
+                <Input id="totpSecret" readOnly value={user.pendingTotpSecret ?? ""} className="font-mono text-sm" />
+                <FieldDescription>如果无法扫描二维码，可以手动输入此密钥</FieldDescription>
+              </Field>
 
-              <details className="rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-4">
-                <summary className="cursor-pointer text-sm font-medium text-[var(--ink)]">
-                  高级选项
-                </summary>
+              <details className="rounded-lg border border-border bg-muted/40 p-4">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">高级选项</summary>
                 <div className="mt-4">
-                  <label htmlFor="totpUri" className="ld-label">
-                    otpauth URI
-                  </label>
-                  <textarea
-                    id="totpUri"
-                    readOnly
-                    value={totpUri}
-                    className="ld-input mt-2 min-h-28 font-mono text-xs leading-5"
-                  />
+                  <Field>
+                    <FieldLabel htmlFor="totpUri">otpauth URI</FieldLabel>
+                    <Textarea id="totpUri" readOnly value={totpUri} className="min-h-28 font-mono text-xs leading-5" />
+                  </Field>
                 </div>
               </details>
 
               <form action={confirmTotpSetup} className="space-y-4">
-                <div>
-                  <label htmlFor="totpCode" className="ld-label">
-                    验证码
-                  </label>
-                  <input
+                <Field>
+                  <FieldLabel htmlFor="totpCode">验证码</FieldLabel>
+                  <Input
                     id="totpCode"
                     name="totpCode"
                     type="text"
@@ -157,91 +138,70 @@ export default async function AdminSecurityPage({
                     pattern="[0-9 ]{6,8}"
                     required
                     autoComplete="one-time-code"
-                    className="ld-input mt-2"
                     placeholder="请输入 6 位验证码"
                   />
-                  <p className="mt-1 text-xs text-[var(--muted)]">
-                    请输入验证器应用中显示的 6 位数字
-                  </p>
-                </div>
-                <button type="submit" className="ld-button-primary">
-                  确认启用
-                </button>
+                  <FieldDescription>请输入验证器应用中显示的 6 位数字</FieldDescription>
+                </Field>
+                <Button type="submit">确认启用</Button>
               </form>
-            </div>
+            </CardContent>
           )}
-        </section>
+        </Card>
 
-        <section className="ld-card-light mt-6 p-6">
-          <div className="border-b border-[var(--hairline)] pb-5">
-            <h2 className="text-lg font-semibold text-[var(--ink)]">AI 导入生成</h2>
-            <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+        <Card className="mt-6">
+          <CardHeader className="border-b">
+            <CardTitle>AI 导入生成</CardTitle>
+            <CardDescription>
               配置 OpenAI-compatible 接口，用于模型导入页的 AI 生成。数据库配置优先于环境变量。
-            </p>
-          </div>
-
-          <div className="mt-5 rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3">
-            <p className="text-sm font-semibold text-[var(--ink)]">
-              当前状态：{aiConfig.ok ? "已配置" : aiConfig.error}
-            </p>
-            <p className="mt-1 text-xs text-[var(--muted)]">
-              API Key：{configuredApiKey ? maskSecret(configuredApiKey) : "未配置"}
-            </p>
-          </div>
-
-          <form action={saveAiGenerationSettings} className="mt-5 space-y-4">
-            <div>
-              <label htmlFor="aiBaseUrl" className="ld-label">
-                Base URL
-              </label>
-              <input
-                id="aiBaseUrl"
-                name="baseUrl"
-                type="url"
-                defaultValue={aiSettings.baseUrl || process.env.AI_BASE_URL || ""}
-                placeholder="https://api.openai.com/v1"
-                className="ld-input mt-2"
-              />
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                留空时使用默认 OpenAI 地址或环境变量。
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="text-sm font-semibold text-foreground">当前状态：{aiConfig.ok ? "已配置" : aiConfig.error}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                API Key：{configuredApiKey ? maskSecret(configuredApiKey) : "未配置"}
               </p>
             </div>
 
-            <div>
-              <label htmlFor="aiModel" className="ld-label">
-                模型
-              </label>
-              <input
-                id="aiModel"
-                name="model"
-                defaultValue={aiSettings.model || process.env.AI_MODEL || ""}
-                placeholder="gpt-4.1-mini"
-                className="ld-input mt-2"
-              />
-            </div>
+            <form action={saveAiGenerationSettings} className="space-y-4">
+              <Field>
+                <FieldLabel htmlFor="aiBaseUrl">Base URL</FieldLabel>
+                <Input
+                  id="aiBaseUrl"
+                  name="baseUrl"
+                  type="url"
+                  defaultValue={aiSettings.baseUrl || process.env.AI_BASE_URL || ""}
+                  placeholder="https://api.openai.com/v1"
+                />
+                <FieldDescription>留空时使用默认 OpenAI 地址或环境变量。</FieldDescription>
+              </Field>
 
-            <div>
-              <label htmlFor="aiApiKey" className="ld-label">
-                API Key
-              </label>
-              <input
-                id="aiApiKey"
-                name="apiKey"
-                type="password"
-                autoComplete="new-password"
-                placeholder={configuredApiKey ? "留空则保留当前密钥" : "请输入 API Key"}
-                className="ld-input mt-2"
-              />
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                出于安全考虑，已保存的密钥不会明文显示。
-              </p>
-            </div>
+              <Field>
+                <FieldLabel htmlFor="aiModel">模型</FieldLabel>
+                <Input
+                  id="aiModel"
+                  name="model"
+                  defaultValue={aiSettings.model || process.env.AI_MODEL || ""}
+                  placeholder="gpt-4.1-mini"
+                />
+              </Field>
 
-            <button type="submit" className="ld-button-primary">
-              保存 AI 配置
-            </button>
-          </form>
-        </section>
+              <Field>
+                <FieldLabel htmlFor="aiApiKey">API Key</FieldLabel>
+                <Input
+                  id="aiApiKey"
+                  name="apiKey"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={configuredApiKey ? "留空则保留当前密钥" : "请输入 API Key"}
+                />
+                <FieldDescription>出于安全考虑，已保存的密钥不会明文显示。</FieldDescription>
+              </Field>
+
+              <Button type="submit">保存 AI 配置</Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

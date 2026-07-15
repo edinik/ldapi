@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
 type FormSubmitBarProps = {
   saving: boolean;
   idleLabel: string;
@@ -6,10 +9,12 @@ type FormSubmitBarProps = {
 
 export function FormSubmitBar({ saving, idleLabel, savingLabel = "保存中..." }: FormSubmitBarProps) {
   return (
-    <div className="sticky bottom-4 z-10 rounded-xl border border-[var(--hairline)] bg-[rgba(250,249,245,0.88)] p-3 shadow-[var(--shadow-soft)] backdrop-blur">
-      <button type="submit" disabled={saving} className="ld-button-primary w-full">
-        {saving ? savingLabel : idleLabel}
-      </button>
-    </div>
+    <Card className="sticky bottom-4 z-10 bg-card/90 shadow-sm backdrop-blur">
+      <CardContent className="p-3">
+        <Button type="submit" disabled={saving} className="w-full" size="lg">
+          {saving ? savingLabel : idleLabel}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

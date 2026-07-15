@@ -12,14 +12,14 @@ export default async function NewSitePage() {
   });
 
   return (
-    <main className="ld-page min-h-screen py-8">
-      <div className="ld-container max-w-4xl">
-        <header className="mb-8 border-b border-[var(--hairline)] pb-6">
-          <Link href="/admin" className="ld-link text-sm">
+    <main className="min-h-screen bg-background py-8 text-foreground">
+      <div className="mx-auto w-[min(100%-2rem,56rem)]">
+        <header className="mb-8 border-b border-border pb-6">
+          <Link href="/admin" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
             返回站点管理
           </Link>
-          <h1 className="ld-display mt-4 text-5xl leading-tight text-[var(--ink)]">添加站点</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground">添加站点</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
             录入新的 AI 公益站入口、模型支持、签到方式和使用限制，公开目录会实时读取活跃站点。
           </p>
         </header>

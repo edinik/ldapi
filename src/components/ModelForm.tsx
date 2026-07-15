@@ -9,6 +9,24 @@ import { FormSection as Section } from "@/components/forms/FormSection";
 import { FormTextField as TextField } from "@/components/forms/FormTextField";
 import { FormCheckboxGroup as CheckboxGroup } from "@/components/forms/FormCheckboxGroup";
 import { FormSubmitBar } from "@/components/forms/FormSubmitBar";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type ModelFormData = Record<string, unknown>;
 
@@ -32,6 +50,7 @@ const developerOptions = [
   "meta",
 ];
 const maxVisibleIconOptions = 80;
+const typeOptions = ["对话", "嵌入", "重排序", "图像生成", "视频生成", "语音生成"];
 
 interface ModelFormProps {
   initialData?: ModelFormData;
@@ -47,72 +66,52 @@ function getStringValue(value: unknown) {
 function DeveloperCombobox({ defaultValue }: { defaultValue?: unknown }) {
   const initialValue = getStringValue(defaultValue);
   const [value, setValue] = useState(initialValue);
-  const [open, setOpen] = useState(false);
   const options = useMemo(() => {
-    const merged = initialValue && !developerOptions.includes(initialValue) ? [initialValue, ...developerOptions] : developerOptions;
+    const merged =
+      initialValue && !developerOptions.includes(initialValue)
+        ? [initialValue, ...developerOptions]
+        : developerOptions;
     const query = value.trim().toLowerCase();
     if (!query) return merged;
     return merged.filter((option) => option.toLowerCase().includes(query));
   }, [initialValue, value]);
 
   return (
-    <div className="relative">
-      <label htmlFor="developer" className="ld-label">
-        开发者
-      </label>
-      <input
-        id="developer"
-        name="developer"
-        value={value}
-        onChange={(event) => {
-          setValue(event.target.value);
-          setOpen(true);
+    <Field>
+      <FieldLabel htmlFor="developer">开发者</FieldLabel>
+      <Combobox<string>
+        items={options}
+        inputValue={value}
+        onInputValueChange={setValue}
+        onValueChange={(next) => {
+          if (next) setValue(next);
         }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        placeholder="输入或选择开发者"
-        className="ld-input mt-2"
-        autoComplete="off"
-        role="combobox"
-        aria-expanded={open}
-        aria-controls="developer-options"
-      />
-      {open && (
-        <div
-          id="developer-options"
-          className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
-          role="listbox"
-        >
-          {options.length > 0 ? (
-            options.map((option) => (
-              <button
-                key={option}
-                type="button"
-                className="flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  setValue(option);
-                  setOpen(false);
-                }}
-                role="option"
-                aria-selected={option === value}
-              >
+      >
+        <ComboboxInput
+          id="developer"
+          name="developer"
+          placeholder="输入或选择开发者"
+          autoComplete="off"
+          className="w-full"
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>没有匹配项，可直接保存为新开发者。</ComboboxEmpty>
+          <ComboboxList>
+            {(option: string) => (
+              <ComboboxItem key={option} value={option}>
                 {option}
-              </button>
-            ))
-          ) : (
-            <p className="px-3 py-2 text-sm text-[var(--muted)]">没有匹配项，可直接保存为新开发者。</p>
-          )}
-        </div>
-      )}
-    </div>
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </Field>
   );
 }
 
 function IconCombobox({ defaultValue }: { defaultValue?: unknown }) {
   const initialValue = getStringValue(defaultValue);
   const [value, setValue] = useState(initialValue);
-  const [open, setOpen] = useState(false);
   const matchedOptions = useMemo(() => {
     const query = value.trim().toLowerCase();
     if (!query) return lobeIconOptions;
@@ -121,150 +120,87 @@ function IconCombobox({ defaultValue }: { defaultValue?: unknown }) {
     );
   }, [value]);
   const options = matchedOptions.slice(0, maxVisibleIconOptions);
+  const displayedOptions = [{ label: "自动匹配开发者", value: "" }, ...options];
 
   return (
-    <div className="relative">
-      <label htmlFor="icon" className="ld-label">
-        图标
-      </label>
-      <div className="mt-2 flex gap-2">
-        <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.62)]">
+    <Field>
+      <FieldLabel htmlFor="icon">图标</FieldLabel>
+      <div className="flex gap-2">
+        <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-muted/50">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value} alt="" className="size-7 object-contain" />
           ) : (
-            <span className="text-xs font-semibold text-[var(--muted)]">自动</span>
+            <span className="text-xs font-semibold text-muted-foreground">自动</span>
           )}
         </span>
-        <input
-          id="icon"
-          name="icon"
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setOpen(true);
+        <Combobox<(typeof displayedOptions)[number]>
+          items={displayedOptions}
+          filter={null}
+          inputValue={value}
+          itemToStringLabel={(option) => option.value}
+          onInputValueChange={setValue}
+          onValueChange={(next) => {
+            if (next) setValue(next.value);
           }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-          placeholder="留空自动匹配开发者，或选择/输入图标地址"
-          className="ld-input"
-          autoComplete="off"
-          role="combobox"
-          aria-expanded={open}
-          aria-controls="icon-options"
-        />
-      </div>
-      {open && (
-        <div
-          id="icon-options"
-          className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
-          role="listbox"
         >
-          <button
-            type="button"
-            className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              setValue("");
-              setOpen(false);
-            }}
-            role="option"
-            aria-selected={!value}
-          >
-            <span className="grid size-7 place-items-center rounded-md bg-[rgba(250,249,245,0.62)] text-[0.625rem] text-[var(--muted)]">
-              自动
-            </span>
-            自动匹配开发者
-          </button>
-          <div className="px-3 py-2 text-xs font-semibold text-[var(--muted)]">
-            显示 {options.length} / {matchedOptions.length} 个 lobe-icons 图标，输入关键词可继续缩小范围。
-          </div>
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                setValue(option.value);
-                setOpen(false);
-              }}
-              role="option"
-              aria-selected={option.value === value}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={option.value} alt="" className="size-7 object-contain" />
-              <span>{option.label}</span>
-            </button>
-          ))}
-          {options.length === 0 && <p className="px-3 py-2 text-sm text-[var(--muted)]">没有匹配项，可直接输入图标 URL 或本地路径。</p>}
-        </div>
-      )}
-      <p className="ld-helper mt-2">留空时主页会按开发者自动匹配 lobe-icons 图标。</p>
-    </div>
+          <ComboboxInput
+            id="icon"
+            name="icon"
+            placeholder="留空自动匹配开发者，或选择/输入图标地址"
+            autoComplete="off"
+            className="flex-1"
+          />
+          <ComboboxContent>
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+              显示 {options.length} / {matchedOptions.length} 个 lobe-icons 图标，输入关键词可继续缩小范围。
+            </div>
+            <ComboboxList>
+              {(option: (typeof displayedOptions)[number]) => (
+                <ComboboxItem key={option.value || "__auto"} value={option}>
+                  <span className="flex items-center gap-3">
+                    {option.value ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={option.value} alt="" className="size-7 object-contain" />
+                    ) : (
+                      <span className="grid size-7 place-items-center rounded-md bg-muted text-[0.625rem] text-muted-foreground">
+                        自动
+                      </span>
+                    )}
+                    <span>{option.label}</span>
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+      <FieldDescription>留空时主页会按开发者自动匹配 lobe-icons 图标。</FieldDescription>
+    </Field>
   );
 }
 
-const typeOptions = ["对话", "嵌入", "重排序", "图像生成", "视频生成", "语音生成"];
-
 function TypeSelect({ defaultValue }: { defaultValue?: string }) {
-  const [value, setValue] = useState(defaultValue || "");
-  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(defaultValue || "none");
 
   return (
-    <div className="relative">
-      <label className="ld-label">类型</label>
-      <input type="hidden" name="type" value={value} />
-      <button
-        type="button"
-        className="ld-input mt-2 flex items-center justify-between text-left font-semibold"
-        onClick={() => setOpen((current) => !current)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className="truncate">{value || "未选择"}</span>
-        <span className="ml-3 text-[var(--muted)]">⌄</span>
-      </button>
-      {open && (
-        <div
-          className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] p-1 shadow-[var(--shadow-soft)]"
-          role="listbox"
-        >
-          <button
-            type="button"
-            className={
-              !value
-                ? "flex min-h-10 w-full items-center rounded-md bg-[var(--surface-card)] px-3 text-left text-sm font-semibold text-[var(--ink)]"
-                : "flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
-            }
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => { setValue(""); setOpen(false); }}
-            role="option"
-            aria-selected={!value}
-          >
-            未选择
-          </button>
+    <Field>
+      <FieldLabel>类型</FieldLabel>
+      <input type="hidden" name="type" value={value === "none" ? "" : value} />
+      <Select value={value} onValueChange={(next) => setValue(next ?? "none")}>
+        <SelectTrigger className="w-full font-semibold">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">未选择</SelectItem>
           {typeOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={
-                option === value
-                  ? "flex min-h-10 w-full items-center rounded-md bg-[var(--surface-card)] px-3 text-left text-sm font-semibold text-[var(--ink)]"
-                  : "flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-[var(--body-strong)] hover:bg-[var(--surface-card)]"
-              }
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => { setValue(option); setOpen(false); }}
-              role="option"
-              aria-selected={option === value}
-            >
+            <SelectItem key={option} value={option}>
               {option}
-            </button>
+            </SelectItem>
           ))}
-        </div>
-      )}
-    </div>
+        </SelectContent>
+      </Select>
+    </Field>
   );
 }
 
@@ -278,13 +214,16 @@ function ReasoningEffortCheckboxes({
   const selected = parseReasoningEffortLevels(defaultValue as string | string[] | null | undefined);
 
   return (
-    <div className="rounded-lg border border-[var(--hairline)] bg-[rgba(250,249,245,0.64)] p-3">
-      <p className="text-sm font-semibold text-[var(--ink)]">推理强度</p>
-      <p className="ld-helper mt-1">为空表示支持推理但不可设置强度。</p>
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
+      <p className="text-sm font-semibold text-foreground">推理强度</p>
+      <p className="mt-1 text-sm text-muted-foreground">为空表示支持推理但不可设置强度。</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {reasoningEffortLevels.map((level) => (
-          <label key={level} className="flex min-h-9 items-center gap-2 rounded-full border border-[var(--hairline)] bg-[rgba(250,249,245,0.7)] px-3 text-xs font-semibold text-[var(--body-strong)]">
-            <input name={name} type="checkbox" value={level} defaultChecked={selected.includes(level)} className="size-3.5 accent-[var(--primary)]" />
+          <label
+            key={level}
+            className="flex min-h-9 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground"
+          >
+            <Checkbox name={name} value={level} defaultChecked={selected.includes(level)} />
             {level}
           </label>
         ))}
@@ -323,18 +262,10 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
             />
             <TextField name="group" label="分组" defaultValue={d.group} placeholder="claude-opus" />
             <TypeSelect defaultValue={getStringValue(d.type)} />
-            <div>
-              <label htmlFor="notes" className="ld-label">
-                备注
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows={4}
-                defaultValue={getStringValue(d.notes)}
-                className="ld-input mt-2 min-h-28 resize-y"
-              />
-            </div>
+            <Field>
+              <FieldLabel htmlFor="notes">备注</FieldLabel>
+              <Textarea id="notes" name="notes" rows={4} defaultValue={getStringValue(d.notes)} className="min-h-28" />
+            </Field>
           </Section>
 
           <Section title="展示控制">
@@ -360,7 +291,7 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
         <div className="space-y-5">
           <Section title="模型卡片" description="能力、模态、成本和限制会用于主页速览。">
             <div>
-              <p className="ld-label">能力</p>
+              <p className="text-sm font-medium text-foreground">能力</p>
               <div className="mt-2">
                 <CheckboxGroup
                   data={d}
@@ -379,7 +310,7 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <p className="ld-label">输入模态</p>
+                <p className="text-sm font-medium text-foreground">输入模态</p>
                 <div className="mt-2">
                   <CheckboxGroup
                     data={d}
@@ -393,7 +324,7 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
                 </div>
               </div>
               <div>
-                <p className="ld-label">输出模态</p>
+                <p className="text-sm font-medium text-foreground">输出模态</p>
                 <div className="mt-2">
                   <CheckboxGroup
                     data={d}
@@ -413,15 +344,39 @@ export default function ModelForm({ initialData, onSubmit, saving }: ModelFormPr
             <div className="grid gap-4 md:grid-cols-2">
               <TextField name="inputCostPerMTokens" label="输入" type="number" step="any" defaultValue={d.inputCostPerMTokens} />
               <TextField name="outputCostPerMTokens" label="输出" type="number" step="any" defaultValue={d.outputCostPerMTokens} />
-              <TextField name="cacheReadCostPerMTokens" label="缓存读取" type="number" step="any" defaultValue={d.cacheReadCostPerMTokens} />
-              <TextField name="cacheWriteCostPerMTokens" label="缓存写入" type="number" step="any" defaultValue={d.cacheWriteCostPerMTokens} />
+              <TextField
+                name="cacheReadCostPerMTokens"
+                label="缓存读取"
+                type="number"
+                step="any"
+                defaultValue={d.cacheReadCostPerMTokens}
+              />
+              <TextField
+                name="cacheWriteCostPerMTokens"
+                label="缓存写入"
+                type="number"
+                step="any"
+                defaultValue={d.cacheWriteCostPerMTokens}
+              />
             </div>
           </Section>
 
           <Section title="限制">
             <div className="grid gap-4 md:grid-cols-2">
-              <TextField name="contextWindow" label="上下文" type="number" defaultValue={d.contextWindow} helper="例如 1000000 会显示为 1M。" />
-              <TextField name="maxOutputTokens" label="输出" type="number" defaultValue={d.maxOutputTokens} helper="例如 128000 会显示为 128K。" />
+              <TextField
+                name="contextWindow"
+                label="上下文"
+                type="number"
+                defaultValue={d.contextWindow}
+                helper="例如 1000000 会显示为 1M。"
+              />
+              <TextField
+                name="maxOutputTokens"
+                label="输出"
+                type="number"
+                defaultValue={d.maxOutputTokens}
+                helper="例如 128000 会显示为 128K。"
+              />
             </div>
           </Section>
 
