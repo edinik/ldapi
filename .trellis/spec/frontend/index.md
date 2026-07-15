@@ -1,32 +1,33 @@
-# Frontend Development Guidelines
+# 前端开发规范
 
-These guidelines describe the conventions currently used by the LDAPI Next.js application. They are implementation contracts for pages, client components, server modules, and tests.
+本层适用于 App Router 页面、React 组件、浏览器端辅助函数、表单、样式和无障碍交互。
 
-## Guidelines Index
+## 规范索引
 
-| Guide | Description |
+| 规范 | 适用场景 |
 |---|---|
-| [Directory Structure](./directory-structure.md) | Ownership of pages, components, boundary helpers, and server modules |
-| [Component Guidelines](./component-guidelines.md) | Component composition, shared form primitives, and accessibility |
-| [Hook Guidelines](./hook-guidelines.md) | Small client hooks and separation from transport helpers |
-| [State Management](./state-management.md) | Server data, local UI state, and derived state |
-| [Quality Guidelines](./quality-guidelines.md) | Required commands and behavior-focused testing |
-| [Type Safety](./type-safety.md) | Boundary normalization, DTO projections, and injectable database types |
+| [目录结构](./directory-structure.md) | 确定页面、组件、表单序列化器和客户端辅助函数的归属 |
+| [组件规范](./component-guidelines.md) | 服务端/客户端边界、共享表单原语和领域组件 |
+| [Hook 规范](./hook-guidelines.md) | 小型客户端 Hook 和可测试的传输辅助函数 |
+| [状态管理](./state-management.md) | 服务端数据、本地 UI 状态和派生集合 |
+| [样式与无障碍](./styling-and-accessibility.md) | LDAPI 设计变量、通用类、响应式行为和无障碍控件 |
+| [类型安全](./type-safety.md) | FormData、浏览器负载、DTO 和规范化后的客户端契约 |
 
-## Pre-Development Checklist
+## 开发前检查
 
-- Read `directory-structure.md` before adding a new module or moving responsibilities.
-- Read `component-guidelines.md` and `state-management.md` for React or form work.
-- Read `hook-guidelines.md` before adding a custom hook or client request helper.
-- Read `type-safety.md` for API payload, database, or DTO work.
-- Read `quality-guidelines.md` before changing tests or validation commands.
-- For changes crossing UI, API, service, and storage, also read `../guides/cross-layer-thinking-guide.md`.
+- 新建或移动前端模块前，阅读 `directory-structure.md`。
+- 修改 React 或表单代码时，阅读 `component-guidelines.md` 和 `state-management.md`。
+- 新增自定义 Hook 或请求封装前，阅读 `hook-guidelines.md`。
+- 修改可见 UI 时，阅读 `styling-and-accessibility.md`。
+- 修改表单、API 负载或展示 DTO 时，阅读 `type-safety.md`。
+- 涉及 Route Handler、Server Action、数据库或认证时，同时阅读 `../backend/index.md`。
+- 新增或修改测试前，同时阅读 `../testing/index.md`。
+- 改动跨越 UI、API、服务和存储时，阅读 `../guides/cross-layer-thinking-guide.md`。
 
-## Quality Check
+## 质量检查
 
-- Run `npm run check`, then run `npm run build` after the check has completed.
-- Verify external UI, API, and database contracts remain unchanged for refactors.
-- Search for direct database writes in Route Handlers and duplicated transport/form logic.
-- Ensure new boundary functions have behavior tests.
+- 除非任务明确要求改变，否则保留现有字段名、默认值、确认文案、导航目标和响应式布局。
+- 检查键盘焦点、标签关联、按钮类型和自定义控件的 ARIA 状态。
+- 按 `../testing/test-patterns.md` 的要求，先运行 `npm run check`，结束后再运行 `npm run build`。
 
-**Language**: Project specification documents are written in English.
+项目规范正文使用中文。面向用户的应用文案默认继续使用中文，除非产品需求另有规定。
