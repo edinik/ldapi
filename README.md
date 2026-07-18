@@ -131,7 +131,30 @@ docker compose exec app npx tsx scripts/reset-password.ts
 
 该脚本会把 `admin` 用户密码重置为 `admin`，重置后请尽快改成安全密码或调整脚本后再执行。
 
-### 5. 反向代理建议
+### 5. 数据备份与恢复
+
+生产环境配置 HTTPS 后，管理员可以进入后台的“数据备份”页面，重新输入当前密码，并在已启用 TOTP 时提供验证码。验证通过后，浏览器会下载一个 `ldapi-backup-<UTC 时间>.sqlite` 文件。
+
+备份文件具有以下特性：
+
+- 使用 SQLite 在线备份机制生成，包含当前 schema、站点、模型、资源、管理员账号和应用配置。
+- `sessions` 表会被清空，恢复后所有管理员都需要重新登录。
+- 文件未加密，可能包含密码哈希、TOTP 密钥和 AI API Key；只应保存在可信设备或加密存储中。
+- 备份只适用于兼容的应用 schema 版本，不支持向旧版本应用降级恢复。
+
+恢复操作不会在后台页面中执行。以 Docker Compose 部署为例，先把下载文件上传到服务器，然后停机替换数据库：
+
+```bash
+docker compose stop app
+cp data/sqlite.db data/sqlite.db.before-restore-$(date +%Y%m%d-%H%M%S)
+cp /path/to/ldapi-backup-20260718T080910123Z.sqlite data/sqlite.db
+docker compose up -d app
+docker compose logs --tail=100 app
+```
+
+重新登录后检查站点、模型、资源和安全设置。如果启动或数据验证失败，再次停止应用，并用恢复前保存的 `data/sqlite.db.before-restore-*` 覆盖 `data/sqlite.db` 后启动。不要在应用运行时直接覆盖数据库文件。
+
+### 6. 反向代理建议
 
 生产环境建议用 Nginx、Caddy 或 VPS 面板把域名反向代理到 `127.0.0.1:3000`，并配置 HTTPS。反向代理后可以把 `APP_PORT` 改为仅供本机或防火墙内访问的端口。
 

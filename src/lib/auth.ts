@@ -38,3 +38,13 @@ export async function getAdminUser(username: string) {
     .limit(1);
   return user ?? null;
 }
+
+export async function getAdminUserById(userId: number) {
+  const [user] = await db
+    .select()
+    .from(adminUsers)
+    .where(eq(adminUsers.id, userId))
+    .limit(1);
+
+  return user ?? null;
+}

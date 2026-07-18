@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/session";
 import { desc } from "drizzle-orm";
+import { DatabaseBackup } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminPage() {
@@ -57,6 +58,10 @@ export default async function AdminPage() {
             </Button>
             <Button variant="outline" render={<Link href="/admin/security" />}>
               安全设置
+            </Button>
+            <Button variant="outline" render={<Link href="/admin/backup" />}>
+              <DatabaseBackup data-icon="inline-start" />
+              数据备份
             </Button>
             <Button render={<Link href="/admin/sites/new" />}>添加站点</Button>
             <form action="/api/auth/logout" method="POST">
