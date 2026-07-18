@@ -12,7 +12,6 @@ export async function requireAdmin() {
 
   const session = await validateSession(sessionId);
   if (!session) {
-    cookieStore.delete("session");
     redirect("/login");
   }
 
