@@ -109,3 +109,38 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 增加数据备份功能
+
+**Date**: 2026-07-19
+**Task**: 增加数据备份功能
+**Branch**: `main`
+
+### Summary
+
+新增管理
+  员 SQLite 备份下载、密码与可选 TOTP 重新认证、WAL 一致性快照、会话清理、恢复文档与测试。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b2f4ce2` | (see git log) |
+| `d6d6f1b` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
