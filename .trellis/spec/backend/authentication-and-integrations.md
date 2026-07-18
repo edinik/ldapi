@@ -2,11 +2,13 @@
 
 ## 认证边界
 
-- `requireAdmin()` 用于服务端页面和 action。它重定向到 `/login`，并删除无效 session cookie。
+- `requireAdmin()` 用于服务端页面和 action。缺少或无效 session 时重定向到 `/login`；它不得在服务端组件渲染期间删除 cookie，因为 Next.js 只允许 Server Action 或 Route Handler 修改 cookie。
 - `requireAuth()` 用于 Route Handler。它返回 `401` JSON，而不是 redirect。
 - 必须保留这一区别：API 客户端不应意外收到 HTML redirect，页面也不应渲染 JSON 错误。
 - Session cookie 为 HTTP-only、`sameSite: "lax"`、path 为 `/`，生产环境启用 secure。登录同时创建七天数据库 session 和 cookie。
 - 退出登录在存在 session 时删除数据库记录和 cookie，并相对请求 origin 重定向。
+
+无效浏览器 cookie 可以留到登录或退出 Route Handler 覆盖/清除。不要在 `requireAdmin()` 中调用 `cookieStore.delete()`：数据库重置或 session 过期后，这会在页面渲染时报 `Cookies can only be modified in a Server Action or Route Handler`，而不是正常重定向。
 
 参考：`src/lib/session.ts`、`src/lib/auth.ts`、`src/app/api/auth/login/route.ts` 和 `src/app/api/auth/logout/route.ts`。
 

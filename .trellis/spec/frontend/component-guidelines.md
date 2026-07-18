@@ -37,6 +37,13 @@
 - `FormSubmitBar` 只拥有保存中的视觉状态，不拥有提交或导航逻辑。
 - 领域表单继续拥有无法由通用原语表达的编辑器和业务默认值，参考 `SiteForm.tsx`、`ModelForm.tsx` 和 `ResourceForm.tsx`。
 - `components/ui` 不拥有中文文案、API URL、导航、删除语义或领域默认值。
+- `Button` 使用 Base UI。通过 `render={<Link />}`、`render={<a />}` 或其他非 `<button>` 元素替换根节点时，共享 `Button` 包装器必须把 `nativeButton` 解析为 `false`；未提供 `render` 时保持原生 button 语义。否则开发模式会为每个链接按钮重复报告 Base UI native button 错误。
+
+```tsx
+<Button render={<Link href="/admin" />}>管理入口</Button>
+```
+
+`src/components/ui/button.tsx` 统一拥有 `nativeButton={nativeButton ?? render == null}`，页面调用方不应重复实现这一判断；确实传入原生 `<button>` render 时可显式覆盖 `nativeButton`。
 
 ## 提交边界
 
