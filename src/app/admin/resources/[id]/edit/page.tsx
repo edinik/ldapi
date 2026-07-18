@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { resources } from "@/db/schema";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { requireAdmin } from "@/lib/session";
 import { parseStoredResourceTags } from "@/lib/resource-payload";
 import EditResourceClient from "./EditResourceClient";
@@ -34,14 +35,17 @@ export default async function EditResourcePage({ params }: { params: Promise<{ i
   return (
     <main className="min-h-screen bg-background py-8 text-foreground">
       <div className="mx-auto w-[min(100%-2rem,56rem)]">
-        <header className="mb-8 border-b border-border pb-6">
-          <Link href="/admin/resources" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            返回资源管理
-          </Link>
-          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground">编辑资源</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            正在维护 {resource.title}。保存后首页资源 tab 会使用最新数据。
-          </p>
+        <header className="mb-8 flex items-start justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <Link href="/admin/resources" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              返回资源管理
+            </Link>
+            <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground">编辑资源</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+              正在维护 {resource.title}。保存后首页资源 tab 会使用最新数据。
+            </p>
+          </div>
+          <ThemeToggle />
         </header>
         <EditResourceClient resource={resource} tagOptions={tagOptions} />
       </div>

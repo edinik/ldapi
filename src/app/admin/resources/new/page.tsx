@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/db";
 import { resources } from "@/db/schema";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { requireAdmin } from "@/lib/session";
 import { parseStoredResourceTags } from "@/lib/resource-payload";
 import NewResourceClient from "./NewResourceClient";
@@ -23,14 +24,17 @@ export default async function NewResourcePage() {
   return (
     <main className="min-h-screen bg-background py-8 text-foreground">
       <div className="mx-auto w-[min(100%-2rem,56rem)]">
-        <header className="mb-8 border-b border-border pb-6">
-          <Link href="/admin/resources" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            返回资源管理
-          </Link>
-          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground">添加资源</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            录入工具项目、网站、开源项目或 LinuxDo 高质量教程帖。
-          </p>
+        <header className="mb-8 flex items-start justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <Link href="/admin/resources" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              返回资源管理
+            </Link>
+            <h1 className="mt-4 text-5xl font-semibold tracking-tight text-foreground">添加资源</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+              录入工具项目、网站、开源项目或 LinuxDo 高质量教程帖。
+            </p>
+          </div>
+          <ThemeToggle />
         </header>
         <NewResourceClient tagOptions={tagOptions} />
       </div>

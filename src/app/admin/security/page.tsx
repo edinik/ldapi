@@ -4,6 +4,7 @@ import { disableTotp, confirmTotpSetup, generateTotpSetup, saveAiGenerationSetti
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,12 +57,15 @@ export default async function AdminSecurityPage({
   return (
     <main className="min-h-screen bg-background py-8 text-foreground">
       <div className="mx-auto w-[min(100%-2rem,48rem)]">
-        <header className="border-b border-border pb-8">
-          <Link href="/admin" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            返回后台
-          </Link>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">安全设置</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">为管理员登录增加基于时间的一次性验证码。</p>
+        <header className="flex items-start justify-between gap-4 border-b border-border pb-8">
+          <div>
+            <Link href="/admin" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              返回后台
+            </Link>
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">安全设置</h1>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">为管理员登录增加基于时间的一次性验证码。</p>
+          </div>
+          <ThemeToggle />
         </header>
 
         {error && (

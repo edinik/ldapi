@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { requireAdmin } from "@/lib/session";
 import { eq } from "drizzle-orm";
 import { ShieldAlert } from "lucide-react";
@@ -23,14 +24,17 @@ export default async function AdminBackupPage() {
   return (
     <main className="min-h-screen bg-background py-8 text-foreground">
       <div className="mx-auto w-[min(100%-2rem,48rem)]">
-        <header className="border-b border-border pb-8">
-          <Link href="/admin" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            返回后台
-          </Link>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">数据备份</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            生成当前数据库的一致性副本并下载到本机。
-          </p>
+        <header className="flex items-start justify-between gap-4 border-b border-border pb-8">
+          <div>
+            <Link href="/admin" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              返回后台
+            </Link>
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">数据备份</h1>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              生成当前数据库的一致性副本并下载到本机。
+            </p>
+          </div>
+          <ThemeToggle />
         </header>
 
         <Alert variant="destructive" className="mt-6">

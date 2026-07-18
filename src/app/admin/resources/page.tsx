@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/session";
 import { parseStoredResourceTags } from "@/lib/resource-payload";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function resourceTypeLabel(type: string) {
   return type === "tool" ? "工具项目" : "LinuxDo 教程";
@@ -57,7 +58,10 @@ export default async function AdminResourcesPage() {
               维护好用工具、开源项目、演示站和 LinuxDo 高质量教程帖。
             </p>
           </div>
-          <Button render={<Link href="/admin/resources/new" />}>添加资源</Button>
+          <div className="flex flex-wrap gap-3">
+            <ThemeToggle />
+            <Button render={<Link href="/admin/resources/new" />}>添加资源</Button>
+          </div>
         </header>
 
         <section className="grid gap-4 py-8 sm:grid-cols-2 lg:grid-cols-4">

@@ -1,4 +1,5 @@
 import { HomeTabs } from "@/components/HomeTabs";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { getHomePageData } from "@/server/directory/get-home-page-data";
 import Link from "next/link";
@@ -21,9 +22,12 @@ export default async function HomePage() {
               <p className="text-xs text-muted-foreground">AI 公益站导航</p>
             </div>
           </Link>
-          <Button variant="outline" render={<Link href="/admin" />}>
-            管理入口
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" render={<Link href="/admin" />}>
+              管理入口
+            </Button>
+          </div>
         </div>
       </header>
 

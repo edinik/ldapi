@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { useTheme } from "@/components/ThemeProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -10,13 +11,19 @@ import { Input } from "@/components/ui/input";
 
 interface LoginFormProps {
   turnstileSiteKey?: string;
+  requiresTotp: boolean;
 }
 
-export function LoginForm({ turnstileSiteKey }: LoginFormProps) {
+export function LoginForm({ turnstileSiteKey, requiresTotp }: LoginFormProps) {
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const turnstileTokenRef = useRef<string>("");
+
+  useEffect(() => {
+    turnstileTokenRef.current = "";
+  }, [resolvedTheme]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,21 +67,25 @@ export function LoginForm({ turnstileSiteKey }: LoginFormProps) {
         <FieldLabel htmlFor="password">密码</FieldLabel>
         <Input id="password" name="password" type="password" required autoComplete="current-password" />
       </Field>
-      <Field>
-        <FieldLabel htmlFor="totpCode">TOTP 验证码</FieldLabel>
-        <Input
-          id="totpCode"
-          name="totpCode"
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9 ]{6,8}"
-          autoComplete="one-time-code"
-        />
-        <FieldDescription>启用两步验证后填写 6 位动态验证码。</FieldDescription>
-      </Field>
-      {turnstileSiteKey && (
+      {requiresTotp && (
+        <Field>
+          <FieldLabel htmlFor="totpCode">TOTP 验证码</FieldLabel>
+          <Input
+            id="totpCode"
+            name="totpCode"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9 ]{6,8}"
+            required
+            autoComplete="one-time-code"
+          />
+          <FieldDescription>请输入验证器应用中显示的 6 位动态验证码。</FieldDescription>
+        </Field>
+      )}
+      {turnstileSiteKey && resolvedTheme && (
         <div className="flex justify-center">
           <Turnstile
+            key={resolvedTheme}
             siteKey={turnstileSiteKey}
             onSuccess={(token) => {
               turnstileTokenRef.current = token;
@@ -83,7 +94,7 @@ export function LoginForm({ turnstileSiteKey }: LoginFormProps) {
               setError("验证码加载失败，请刷新页面重试");
             }}
             options={{
-              theme: "light",
+              theme: resolvedTheme,
               size: "normal",
             }}
           />

@@ -21,6 +21,7 @@ import {
 import { requireAdmin } from "@/lib/session";
 import { desc } from "drizzle-orm";
 import { DatabaseBackup } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
 
 export default async function AdminPage() {
@@ -50,6 +51,7 @@ export default async function AdminPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <ThemeToggle />
             <Button variant="outline" render={<Link href="/admin/resources" />}>
               资源管理
             </Button>

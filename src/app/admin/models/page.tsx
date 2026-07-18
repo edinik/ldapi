@@ -23,6 +23,7 @@ import {
 import { requireAdmin } from "@/lib/session";
 import { formatCost, formatTokenLimit, getCapabilityLabels, type ModelDisplayItem } from "@/lib/model-display";
 import { parseReasoningEffortLevels } from "@/lib/site-model-capabilities";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function AdminModelsPage() {
   await requireAdmin();
@@ -51,6 +52,7 @@ export default async function AdminModelsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <ThemeToggle />
             <Button variant="outline" render={<Link href="/admin/models/import" />}>
               导入模型
             </Button>
