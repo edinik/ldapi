@@ -144,3 +144,38 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 增加全局日间夜间模式切换
+
+**Date**: 2026-07-19
+**Task**: 增加全局日间夜间模式切换
+**Branch**: `main`
+
+### Summary
+
+实现全站日间/夜间主题切换与浏览器偏好持久化，同步 Turnstile 主题并在未启用时隐藏 TOTP 字段；修复 Next.js 失效 Cookie 和 Base UI Link 按钮警告，更新前后端规范。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f47f338` | (see git log) |
+| `7cb51f8` | (see git log) |
+| `f31b5f1` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
