@@ -179,3 +179,37 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 完善模型 AI 生成反馈
+
+**Date**: 2026-07-19
+**Task**: 完善模型 AI 生成反馈
+**Branch**: `main`
+
+### Summary
+
+为模型导入 AI 生成增加实时耗时、长耗时与超时反馈，展示请求/实际模型及输入、输出、缓存、思考和总 Token；兼容 JSON 与 SSE usage，补充异常处理、测试和集成规范。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0ac4c2e` | (see git log) |
+| `41dd653` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
