@@ -73,6 +73,7 @@ describe("AI model import helpers", () => {
         requests.push({ url: String(url), init: init || {} });
         return new Response(
           JSON.stringify({
+            model: "gpt-test-2026-07-03",
             choices: [
               {
                 message: {
@@ -80,6 +81,13 @@ describe("AI model import helpers", () => {
                 },
               },
             ],
+            usage: {
+              prompt_tokens: 120,
+              completion_tokens: 80,
+              total_tokens: 200,
+              prompt_tokens_details: { cached_tokens: 40 },
+              completion_tokens_details: { reasoning_tokens: 25 },
+            },
           }),
           { status: 200 },
         );
@@ -89,6 +97,17 @@ describe("AI model import helpers", () => {
     assert.equal(result.ok, true);
     if (result.ok) {
       assert.match(result.content, /GPT-4\.1/);
+      assert.deepEqual(result.metadata, {
+        requestedModel: "gpt-test",
+        responseModel: "gpt-test-2026-07-03",
+        usage: {
+          inputTokens: 120,
+          outputTokens: 80,
+          cachedTokens: 40,
+          reasoningTokens: 25,
+          totalTokens: 200,
+        },
+      });
     }
     assert.equal(requests[0].url, "https://api.example.com/v1/chat/completions");
     assert.equal(requests[0].init.method, "POST");
@@ -119,9 +138,10 @@ describe("AI model import helpers", () => {
       fetcher: async () =>
         new Response(
           [
-            'data: {"choices":[{"delta":{"content":"{\\"models\\":["}}]}\n\n',
+            'data: {"model":"gpt-stream-actual","choices":[{"delta":{"content":"{\\"models\\":["}}]}\n\n',
             'data: {"choices":[{"delta":{"content":"{\\"name\\":\\"GPT-4.1\\",\\"developer\\":\\"openai\\"}"}}]}\n\n',
             'data: {"choices":[{"delta":{"content":"]}"}}]}\n\n',
+            'data: {"model":"gpt-stream-actual","choices":[],"usage":{"prompt_tokens":90,"completion_tokens":35,"total_tokens":125,"prompt_tokens_details":{"cached_tokens":20},"completion_tokens_details":{"reasoning_tokens":10}}}\n\n',
             "data: [DONE]\n\n",
           ].join(""),
           {
@@ -134,6 +154,66 @@ describe("AI model import helpers", () => {
     assert.equal(result.ok, true);
     if (result.ok) {
       assert.equal(result.content, '{"models":[{"name":"GPT-4.1","developer":"openai"}]}');
+      assert.deepEqual(result.metadata, {
+        requestedModel: "gpt-test",
+        responseModel: "gpt-stream-actual",
+        usage: {
+          inputTokens: 90,
+          outputTokens: 35,
+          cachedTokens: 20,
+          reasoningTokens: 10,
+          totalTokens: 125,
+        },
+      });
+    }
+  });
+
+  it("normalizes compatible usage fields and ignores invalid token values", async () => {
+    const result = await generateModelImportContent({
+      query: "Claude",
+      template: createModelImportTemplate(),
+      today: "2026-07-03",
+      config: {
+        baseUrl: "https://api.example.com/v1",
+        apiKey: "test-key",
+        model: "claude-requested",
+      },
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: '{"models":[{"name":"Claude","developer":"anthropic"}]}',
+                },
+              },
+            ],
+            usage: {
+              prompt_tokens: -1,
+              input_tokens: 150,
+              completion_tokens: "invalid",
+              output_tokens: 45,
+              cached_tokens: "invalid",
+              cache_read_input_tokens: 50,
+              cache_creation_input_tokens: 5,
+              reasoning_tokens: 12,
+              total_tokens: "invalid",
+            },
+          }),
+          { status: 200 },
+        ),
+    });
+
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.metadata.responseModel, null);
+      assert.deepEqual(result.metadata.usage, {
+        inputTokens: 150,
+        outputTokens: 45,
+        cachedTokens: 55,
+        reasoningTokens: 12,
+        totalTokens: null,
+      });
     }
   });
 });

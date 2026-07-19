@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
   });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 502 });
+    return NextResponse.json({ error: result.error, metadata: result.metadata }, { status: 502 });
   }
 
-  return NextResponse.json({ content: result.content });
+  return NextResponse.json({ content: result.content, metadata: result.metadata });
 }

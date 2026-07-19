@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LoaderCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +30,25 @@ type ImportResult = {
   }>;
 };
 
-type GenerateResult = {
-  content?: string;
-  error?: string;
+type GenerationUsage = {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cachedTokens: number | null;
+  reasoningTokens: number | null;
+  totalTokens: number | null;
+};
+
+type GenerationMetadata = {
+  requestedModel: string | null;
+  responseModel: string | null;
+  usage: GenerationUsage;
+};
+
+type GenerationFeedback = {
+  status: "success" | "error";
+  elapsedSeconds: number;
+  message: string;
+  metadata: GenerationMetadata | null;
 };
 
 const actionLabels = {
@@ -39,6 +57,77 @@ const actionLabels = {
   skip: "跳过",
 };
 
+const generateTimeoutMs = 180_000;
+const slowGenerationSeconds = 30;
+const tokenFormatter = new Intl.NumberFormat("zh-CN");
+
+function asRecord(value: unknown) {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function nullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function nullableString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function parseGenerationPayload(value: unknown) {
+  const payload = asRecord(value);
+  const metadata = asRecord(payload?.metadata);
+  const usage = asRecord(metadata?.usage);
+
+  return {
+    content: typeof payload?.content === "string" ? payload.content : null,
+    error: typeof payload?.error === "string" ? payload.error : null,
+    metadata: metadata
+      ? {
+          requestedModel: nullableString(metadata.requestedModel),
+          responseModel: nullableString(metadata.responseModel),
+          usage: {
+            inputTokens: nullableNumber(usage?.inputTokens),
+            outputTokens: nullableNumber(usage?.outputTokens),
+            cachedTokens: nullableNumber(usage?.cachedTokens),
+            reasoningTokens: nullableNumber(usage?.reasoningTokens),
+            totalTokens: nullableNumber(usage?.totalTokens),
+          },
+        }
+      : null,
+  };
+}
+
+function elapsedSecondsSince(startedAt: number) {
+  return Math.max(1, Math.ceil((Date.now() - startedAt) / 1000));
+}
+
+function formatTokenCount(value: number | null) {
+  return value === null ? "未提供" : tokenFormatter.format(value);
+}
+
+function GenerationMetadataDetails({ metadata }: { metadata: GenerationMetadata }) {
+  const items = [
+    ["请求模型", metadata.requestedModel || "未提供"],
+    ["实际模型", metadata.responseModel || "未提供"],
+    ["输入 Token", formatTokenCount(metadata.usage.inputTokens)],
+    ["输出 Token", formatTokenCount(metadata.usage.outputTokens)],
+    ["缓存 Token", formatTokenCount(metadata.usage.cachedTokens)],
+    ["思考 Token", formatTokenCount(metadata.usage.reasoningTokens)],
+    ["总 Token", formatTokenCount(metadata.usage.totalTokens)],
+  ];
+
+  return (
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {items.map(([label, value]) => (
+        <div key={label} className="rounded-md border border-border/70 bg-muted/40 px-3 py-2">
+          <div className="text-xs text-muted-foreground">{label}</div>
+          <div className="mt-1 break-all font-mono text-xs font-semibold text-foreground">{value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ImportModelsClient({ template }: { template: string }) {
   const router = useRouter();
   const [content, setContent] = useState(template);
@@ -46,9 +135,26 @@ export default function ImportModelsClient({ template }: { template: string }) {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateQuery, setGenerateQuery] = useState("");
-  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null);
+  const [generationElapsedSeconds, setGenerationElapsedSeconds] = useState(0);
+  const [generationFeedback, setGenerationFeedback] = useState<GenerationFeedback | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [importSuccess, setImportSuccess] = useState(false);
+  const generateAbortController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!generating || generationStartedAt === null) return;
+
+    const updateElapsed = () => {
+      setGenerationElapsedSeconds(Math.floor((Date.now() - generationStartedAt) / 1000));
+    };
+    const intervalId = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [generating, generationStartedAt]);
+
+  useEffect(() => {
+    return () => generateAbortController.current?.abort();
+  }, []);
 
   async function submitImport(dryRun: boolean) {
     setLoading(true);
@@ -71,28 +177,92 @@ export default function ImportModelsClient({ template }: { template: string }) {
   async function generateImportContent() {
     const query = generateQuery.trim();
     if (!query) {
-      setGenerateError("请输入模型或厂商名称");
+      setGenerationFeedback({
+        status: "error",
+        elapsedSeconds: 0,
+        message: "请输入模型或厂商名称",
+        metadata: null,
+      });
       return;
     }
 
+    const startedAt = Date.now();
+    const controller = new AbortController();
+    let timedOut = false;
     setGenerating(true);
-    setGenerateError(null);
+    setGenerationStartedAt(startedAt);
+    setGenerationElapsedSeconds(0);
+    setGenerationFeedback(null);
     setImportSuccess(false);
-    const res = await fetch("/api/models/import/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
-    });
-    const data = (await res.json()) as GenerateResult;
-    setGenerating(false);
+    generateAbortController.current = controller;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, generateTimeoutMs);
 
-    if (!res.ok || !data.content) {
-      setGenerateError(data.error || "AI 生成失败");
-      return;
+    try {
+      const res = await fetch("/api/models/import/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+        signal: controller.signal,
+      });
+      const responseText = await res.text();
+      let rawPayload: unknown;
+      try {
+        rawPayload = JSON.parse(responseText);
+      } catch {
+        setGenerationFeedback({
+          status: "error",
+          elapsedSeconds: elapsedSecondsSince(startedAt),
+          message: res.ok ? "AI 服务返回了无法解析的响应" : `AI 生成失败：HTTP ${res.status}`,
+          metadata: null,
+        });
+        return;
+      }
+
+      const data = parseGenerationPayload(rawPayload);
+
+      if (!res.ok || !data.content) {
+        setGenerationFeedback({
+          status: "error",
+          elapsedSeconds: elapsedSecondsSince(startedAt),
+          message: data.error || (res.ok ? "AI 生成失败：响应中缺少生成内容" : `AI 生成失败：HTTP ${res.status}`),
+          metadata: data.metadata,
+        });
+        return;
+      }
+
+      setContent(data.content);
+      setResult(null);
+      setGenerationFeedback({
+        status: "success",
+        elapsedSeconds: elapsedSecondsSince(startedAt),
+        message: "已生成并通过导入内容校验。",
+        metadata: data.metadata,
+      });
+    } catch (error) {
+      const message = timedOut
+        ? "AI 生成超时（超过 180 秒），请稍后重试"
+        : error instanceof Error && error.message
+          ? `AI 请求失败：${error.message}`
+          : "AI 请求失败，请检查网络后重试";
+
+      setGenerationFeedback({
+        status: "error",
+        elapsedSeconds: elapsedSecondsSince(startedAt),
+        message,
+        metadata: null,
+      });
+    } finally {
+      window.clearTimeout(timeoutId);
+      if (generateAbortController.current === controller) {
+        generateAbortController.current = null;
+      }
+      setGenerationElapsedSeconds(elapsedSecondsSince(startedAt));
+      setGenerationStartedAt(null);
+      setGenerating(false);
     }
-
-    setContent(data.content);
-    setResult(null);
   }
 
   return (
@@ -164,12 +334,37 @@ export default function ImportModelsClient({ template }: { template: string }) {
                     disabled={generating}
                   />
                   <Button type="button" className="shrink-0" disabled={generating} onClick={() => void generateImportContent()}>
-                    {generating ? "生成中..." : "AI 生成"}
+                    {generating && <LoaderCircle data-icon="inline-start" className="animate-spin" />}
+                    {generating ? "AI 生成中" : "AI 生成"}
                   </Button>
                 </div>
-                {generateError && <p className="mt-2 text-sm text-destructive">{generateError}</p>}
               </Field>
             </div>
+            {generating && (
+              <Alert role="status" aria-live="polite" aria-atomic="true">
+                <LoaderCircle className="animate-spin" />
+                <AlertTitle>正在生成模型资料</AlertTitle>
+                <AlertDescription>
+                  <span aria-hidden="true">已耗时 {generationElapsedSeconds} 秒。</span>
+                  {generationElapsedSeconds >= slowGenerationSeconds && " 生成时间较长，AI 仍在整理官方资料，请耐心等待。"}
+                </AlertDescription>
+              </Alert>
+            )}
+            {!generating && generationFeedback && (
+              <Alert
+                variant={generationFeedback.status === "error" ? "destructive" : "default"}
+                role={generationFeedback.status === "error" ? "alert" : "status"}
+                aria-live={generationFeedback.status === "error" ? "assertive" : "polite"}
+              >
+                <AlertTitle>{generationFeedback.status === "success" ? "生成成功" : "生成失败"}</AlertTitle>
+                <AlertDescription>
+                  <div>
+                    {generationFeedback.message} 共耗时 {generationFeedback.elapsedSeconds} 秒。
+                  </div>
+                  {generationFeedback.metadata && <GenerationMetadataDetails metadata={generationFeedback.metadata} />}
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="rounded-lg bg-muted/60 p-4 font-mono text-xs leading-6 text-muted-foreground">
               请访问模型官网和官方文档，整理模型信息为右侧 JSON 模板格式。字段缺失时填 null 或 false；价格统一使用美元 / M tokens；日期使用 YYYY-MM-DD；不要输出 Markdown，只输出 JSON。
             </div>

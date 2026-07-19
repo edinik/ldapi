@@ -35,6 +35,46 @@ type ValidationResult =
       error: string;
     };
 
+export type ModelImportTokenUsage = {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cachedTokens: number | null;
+  reasoningTokens: number | null;
+  totalTokens: number | null;
+};
+
+export type ModelImportGenerationMetadata = {
+  requestedModel: string;
+  responseModel: string | null;
+  usage: ModelImportTokenUsage;
+};
+
+export type ModelImportGenerationResult =
+  | {
+      ok: true;
+      content: string;
+      metadata: ModelImportGenerationMetadata;
+    }
+  | {
+      ok: false;
+      error: string;
+      metadata?: ModelImportGenerationMetadata;
+    };
+
+type ParsedAssistantResponse =
+  | {
+      ok: true;
+      content: string;
+      responseModel: string | null;
+      usage: ModelImportTokenUsage;
+    }
+  | {
+      ok: false;
+      error: string;
+      responseModel: string | null;
+      usage: ModelImportTokenUsage;
+    };
+
 type GenerateInput = {
   query: string;
   template: string;
@@ -166,6 +206,66 @@ function getAssistantDeltaContent(payload: unknown) {
   return typeof content === "string" ? content : null;
 }
 
+function asRecord(value: unknown) {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function nonNegativeNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function firstNumber(...values: unknown[]) {
+  for (const value of values) {
+    const parsed = nonNegativeNumber(value);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+function emptyTokenUsage(): ModelImportTokenUsage {
+  return {
+    inputTokens: null,
+    outputTokens: null,
+    cachedTokens: null,
+    reasoningTokens: null,
+    totalTokens: null,
+  };
+}
+
+function normalizeTokenUsage(value: unknown): ModelImportTokenUsage {
+  const usage = asRecord(value);
+  if (!usage) return emptyTokenUsage();
+
+  const promptDetails = asRecord(usage.prompt_tokens_details);
+  const completionDetails = asRecord(usage.completion_tokens_details);
+  const cacheReadTokens = nonNegativeNumber(usage.cache_read_input_tokens);
+  const cacheCreationTokens = nonNegativeNumber(usage.cache_creation_input_tokens);
+  let cachedTokens = firstNumber(promptDetails?.cached_tokens, usage.cached_tokens);
+
+  if (cachedTokens === null && (cacheReadTokens !== null || cacheCreationTokens !== null)) {
+    cachedTokens = (cacheReadTokens ?? 0) + (cacheCreationTokens ?? 0);
+  }
+
+  return {
+    inputTokens: firstNumber(usage.prompt_tokens, usage.input_tokens),
+    outputTokens: firstNumber(usage.completion_tokens, usage.output_tokens),
+    cachedTokens,
+    reasoningTokens: firstNumber(completionDetails?.reasoning_tokens, usage.reasoning_tokens),
+    totalTokens: nonNegativeNumber(usage.total_tokens),
+  };
+}
+
+function getResponseModel(payload: unknown) {
+  const model = asRecord(payload)?.model;
+  return typeof model === "string" && model.trim() ? model.trim() : null;
+}
+
+function getResponseUsage(payload: unknown) {
+  const record = asRecord(payload);
+  if (!record || !Object.prototype.hasOwnProperty.call(record, "usage")) return null;
+  return normalizeTokenUsage(record.usage);
+}
+
 function buildChatCompletionRequestBody({ query, template, today, model }: PromptInput & { model: string }) {
   return {
     model,
@@ -187,19 +287,28 @@ function parseJsonAssistantContent(text: string) {
   try {
     payload = JSON.parse(text);
   } catch {
-    return { ok: false as const, error: "AI 返回内容不是有效 JSON" };
+    return {
+      ok: false as const,
+      error: "AI 返回内容不是有效 JSON",
+      responseModel: null,
+      usage: emptyTokenUsage(),
+    };
   }
 
+  const responseModel = getResponseModel(payload);
+  const usage = getResponseUsage(payload) ?? emptyTokenUsage();
   const assistantContent = getAssistantContent(payload);
   if (!assistantContent) {
-    return { ok: false as const, error: "AI 返回中缺少 message.content" };
+    return { ok: false as const, error: "AI 返回中缺少 message.content", responseModel, usage };
   }
 
-  return { ok: true as const, content: assistantContent };
+  return { ok: true as const, content: assistantContent, responseModel, usage };
 }
 
-function parseSseAssistantContent(text: string) {
+function parseSseAssistantContent(text: string): ParsedAssistantResponse {
   let content = "";
+  let responseModel: string | null = null;
+  let usage = emptyTokenUsage();
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -212,8 +321,16 @@ function parseSseAssistantContent(text: string) {
     try {
       payload = JSON.parse(data);
     } catch {
-      return { ok: false as const, error: "AI 流式返回中包含无效 JSON 数据块" };
+      return {
+        ok: false,
+        error: "AI 流式返回中包含无效 JSON 数据块",
+        responseModel,
+        usage,
+      };
     }
+
+    responseModel = getResponseModel(payload) ?? responseModel;
+    usage = getResponseUsage(payload) ?? usage;
 
     const deltaContent = getAssistantDeltaContent(payload);
     if (deltaContent) {
@@ -226,13 +343,13 @@ function parseSseAssistantContent(text: string) {
   }
 
   if (!content) {
-    return { ok: false as const, error: "AI 流式返回中缺少 assistant 内容" };
+    return { ok: false, error: "AI 流式返回中缺少 assistant 内容", responseModel, usage };
   }
 
-  return { ok: true as const, content };
+  return { ok: true, content, responseModel, usage };
 }
 
-function parseAssistantResponse(text: string, contentType: string | null) {
+function parseAssistantResponse(text: string, contentType: string | null): ParsedAssistantResponse {
   if (contentType?.toLowerCase().includes("text/event-stream") || text.trimStart().startsWith("data:")) {
     return parseSseAssistantContent(text);
   }
@@ -246,7 +363,12 @@ export async function generateModelImportContent({
   today,
   config,
   fetcher = fetch,
-}: GenerateInput): Promise<ValidationResult> {
+}: GenerateInput): Promise<ModelImportGenerationResult> {
+  const baseMetadata: ModelImportGenerationMetadata = {
+    requestedModel: config.model,
+    responseModel: null,
+    usage: emptyTokenUsage(),
+  };
   const response = await fetcher(`${config.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -259,13 +381,27 @@ export async function generateModelImportContent({
 
   const responseText = await response.text();
   if (!response.ok) {
-    return { ok: false, error: `AI 请求失败：HTTP ${response.status}${getErrorSnippet(responseText)}` };
+    return {
+      ok: false,
+      error: `AI 请求失败：HTTP ${response.status}${getErrorSnippet(responseText)}`,
+      metadata: baseMetadata,
+    };
   }
 
   const assistantContent = parseAssistantResponse(responseText, response.headers.get("content-type"));
+  const metadata: ModelImportGenerationMetadata = {
+    requestedModel: config.model,
+    responseModel: assistantContent.responseModel,
+    usage: assistantContent.usage,
+  };
   if (!assistantContent.ok) {
-    return assistantContent;
+    return { ok: false, error: assistantContent.error, metadata };
   }
 
-  return validateGeneratedImportContent(assistantContent.content);
+  const validation = validateGeneratedImportContent(assistantContent.content);
+  if (!validation.ok) {
+    return { ok: false, error: validation.error, metadata };
+  }
+
+  return { ok: true, content: validation.content, metadata };
 }
