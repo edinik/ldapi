@@ -40,6 +40,82 @@
 - 集成测试注入 `fetcher`。不得把 API key 暴露给客户端组件或 API 响应。
 - 上游失败应转换成既有路由响应，不要泄漏原始供应商负载。
 
+## 场景：模型导入生成的模型与 Token 元数据
+
+### 1. Scope / Trigger
+
+- 修改 `src/lib/model-import-ai.ts` 的 Chat Completions 请求、SSE/JSON 响应解析，或 `/api/models/import/generate` 的浏览器响应时，必须保持本节契约。
+- `stream_options.include_usage` 的最终 SSE 数据块通常没有 `choices`，因此正文与 usage 必须独立解析；否则页面会生成成功但丢失统计。
+
+### 2. Signatures
+
+```ts
+type ModelImportGenerationMetadata = {
+  requestedModel: string;
+  responseModel: string | null;
+  usage: {
+    inputTokens: number | null;
+    outputTokens: number | null;
+    cachedTokens: number | null;
+    reasoningTokens: number | null;
+    totalTokens: number | null;
+  };
+};
+```
+
+- `POST /api/models/import/generate` 请求保持 `{ query: string }`。
+- 成功响应为 `{ content: string, metadata: ModelImportGenerationMetadata }`。
+- 已获得安全元数据的 `502` 响应可以为 `{ error: string, metadata?: ModelImportGenerationMetadata }`。
+
+### 3. Contracts
+
+- `requestedModel` 来自服务端已解析配置；`responseModel` 只接受上游顶层非空 `model`。
+- 输入/输出优先读取 `prompt_tokens` / `completion_tokens`，回退 `input_tokens` / `output_tokens`。
+- 缓存优先读取 `prompt_tokens_details.cached_tokens`，再回退 `cached_tokens` 或 `cache_read_input_tokens + cache_creation_input_tokens`。
+- 思考优先读取 `completion_tokens_details.reasoning_tokens`，回退 `reasoning_tokens`。
+- `totalTokens` 只读取 `total_tokens`，不根据分项估算。所有缺失值为 `null`，浏览器展示“未提供”。
+- 只返回规范化字段；不得返回 API key、base URL 或供应商原始 usage/error 对象。
+
+### 4. Validation & Error Matrix
+
+| 条件 | 行为 |
+|---|---|
+| Token 值是非负有限 number | 接受并映射到 DTO |
+| Token 值是字符串、负数、`NaN` 或无限值 | 作为 `null`，继续解析正文 |
+| SSE 最终块 `choices: []` 且包含 usage | 收集 usage，不影响已拼接正文 |
+| 上游缺少 model 或 usage | 生成仍可成功，对应字段为 `null` |
+| 正文缺失、JSON 无效或导入校验失败 | 保持既有 `502` 错误边界，可附带已规范化 metadata |
+| 上游 HTTP 失败 | 返回既有中文错误摘要，不透传原始对象 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：SSE 内容块逐段拼接，最终空 choices 块提供 model 和完整 usage，返回经过导入校验的 content 与 metadata。
+- Base：供应商只返回有效 content，没有 model/usage；content 成功，统计全部为 `null`。
+- Bad：把字符串 `"120"` 强转为 Token，或因为最终块没有 choices 而跳过 usage；这会把不可信值或错误的“未提供”状态送到 UI。
+
+### 6. Tests Required
+
+- JSON 响应：断言 content、请求模型、实际模型和 OpenAI usage details。
+- SSE 响应：最终 `choices: []` usage 块仍被读取，正文拼接保持正确。
+- 兼容字段：断言 `input_tokens` / `output_tokens`、缓存字段合计和 `reasoning_tokens`。
+- 非法/缺失字段：断言降级为 `null`，且不破坏生成成功与既有错误文案。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+if (!choices?.length) continue; // 会跳过 include_usage 的最终 SSE 块
+```
+
+#### Correct
+
+```ts
+responseModel = readModel(payload) ?? responseModel;
+usage = readUsage(payload) ?? usage;
+appendAssistantContent(payload); // 正文解析与 metadata 解析彼此独立
+```
+
 ## 配置变更
 
 新增环境配置时，搜索并更新完整契约：解析器、`.env.example`、相关 Docker/Compose 传递、必要时的管理设置 UI、文档和测试。参考 `../guides/cross-layer-thinking-guide.md`。
