@@ -1,4 +1,5 @@
 import { parseModelImportInput } from "@/lib/model-import";
+import { openAiResearchTools } from "@/lib/openai-compatible-research";
 import type { ReasoningEffortLevel } from "@/lib/site-model-capabilities";
 
 export type ChatMessage = {
@@ -88,12 +89,6 @@ type GenerateInput = {
   };
   fetcher?: typeof fetch;
 };
-
-const modelResearchTools = [
-  { type: "code_interpreter" },
-  { type: "web_search", enable_image_understanding: true },
-  { type: "x_search", enable_image_understanding: true },
-];
 
 function requiredEnv(env: NodeJS.ProcessEnv | Record<string, string | undefined>, name: string) {
   const value = env[name]?.trim();
@@ -278,7 +273,7 @@ function buildChatCompletionRequestBody({
   return {
     model,
     ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
-    tools: modelResearchTools,
+    tools: openAiResearchTools,
     stream: true,
     messages: buildModelImportPrompt({ query, template, today }),
     temperature: 0.2,
