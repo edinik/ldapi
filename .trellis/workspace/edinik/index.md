@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
+- **Total Sessions**: 8
 - **Last Active**: 2026-07-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~248 | Active |
+| `journal-1.md` | ~281 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-07-20 | 修复筛选下拉框收起标签 | `b8d50f1` | `main` |
 | 7 | 2026-07-20 | 优化夜间模式模型图标对比度 | `798c6da` | `main` |
 | 6 | 2026-07-19 | 完善模型 AI 生成反馈 | `0ac4c2e`, `41dd653` | `main` |
 | 5 | 2026-07-19 | 增加全局日间夜间模式切换 | `f47f338`, `7cb51f8`, `f31b5f1` | `main` |

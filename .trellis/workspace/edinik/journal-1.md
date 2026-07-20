@@ -246,3 +246,36 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: 修复筛选下拉框收起标签
+
+**Date**: 2026-07-20
+**Task**: 修复筛选下拉框收起标签
+**Branch**: `main`
+
+### Summary
+
+共享 FilterSelect 根据当前 value 显示对应 option label，修复站点模型、模型开发者与排序筛选收起时暴露内部值的问题；完整检查和生产构建通过。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b8d50f1` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
