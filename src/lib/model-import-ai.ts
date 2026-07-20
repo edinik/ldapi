@@ -1,4 +1,5 @@
 import { parseModelImportInput } from "@/lib/model-import";
+import type { ReasoningEffortLevel } from "@/lib/site-model-capabilities";
 
 export type ChatMessage = {
   role: "system" | "user";
@@ -83,6 +84,7 @@ type GenerateInput = {
     baseUrl: string;
     apiKey: string;
     model: string;
+    reasoningEffort?: ReasoningEffortLevel | null;
   };
   fetcher?: typeof fetch;
 };
@@ -266,9 +268,16 @@ function getResponseUsage(payload: unknown) {
   return normalizeTokenUsage(record.usage);
 }
 
-function buildChatCompletionRequestBody({ query, template, today, model }: PromptInput & { model: string }) {
+function buildChatCompletionRequestBody({
+  query,
+  template,
+  today,
+  model,
+  reasoningEffort,
+}: PromptInput & { model: string; reasoningEffort?: ReasoningEffortLevel | null }) {
   return {
     model,
+    ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
     tools: modelResearchTools,
     stream: true,
     messages: buildModelImportPrompt({ query, template, today }),
@@ -376,7 +385,13 @@ export async function generateModelImportContent({
       Accept: "text/event-stream",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(buildChatCompletionRequestBody({ query, template, today, model: config.model })),
+    body: JSON.stringify(buildChatCompletionRequestBody({
+      query,
+      template,
+      today,
+      model: config.model,
+      reasoningEffort: config.reasoningEffort,
+    })),
   });
 
   const responseText = await response.text();

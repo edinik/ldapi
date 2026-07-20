@@ -40,6 +40,85 @@
 - 集成测试注入 `fetcher`。不得把 API key 暴露给客户端组件或 API 响应。
 - 上游失败应转换成既有路由响应，不要泄漏原始供应商负载。
 
+## 场景：AI 导入模型枚举与推理强度
+
+### 1. Scope / Trigger
+
+- 修改安全设置中的 AI 模型选择、`fetchAiGenerationModels` Server Action、`GET {baseUrl}/models` 集成、`ai.reasoning_effort` 设置或 Chat Completions 的 `reasoning_effort` 字段时，必须保持本节契约。
+- 模型枚举是辅助输入，不是保存或生成的前置条件；不支持 `/models` 的兼容服务必须仍可使用手工模型名。
+
+### 2. Signatures
+
+```ts
+type StoredAiSettings = {
+  baseUrl: string | null;
+  apiKey: string | null;
+  model: string | null;
+  reasoningEffort: ReasoningEffortLevel | null;
+};
+
+type OpenAiCompatibleModelListResult =
+  | { ok: true; models: string[] }
+  | { ok: false; error: string };
+```
+
+- 持久化键为 `ai.base_url`、`ai.api_key`、`ai.model`、`ai.reasoning_effort`；通用 `app_settings` 表无需新增 schema 字段。
+- 推理强度复用 `src/lib/site-model-capabilities.ts` 的 `ReasoningEffortLevel` 集合。
+
+### 3. Contracts
+
+- 模型拉取只在认证后的 Server Action 中执行；表单中非空 Base URL/API Key 优先，随后回退已存设置和环境变量。
+- 上游请求为 `GET {normalizedBaseUrl}/models`，包含服务端 `Authorization: Bearer <apiKey>` 和 `Accept: application/json`。
+- 只接受 `{ data: Array<{ id: string }> }`；模型 ID trim、过滤空值、去重并排序后返回浏览器。
+- 浏览器只获得模型 ID 或安全中文错误，不得获得 API key、Authorization header、完整上游 body 或供应商原始对象。
+- `reasoningEffort === null` 表示使用供应商默认，Chat Completions 请求体不得包含 `reasoning_effort`；非空时原值传入该字段。
+- 保持 `POST /api/models/import/generate` 的 `{ query }` 请求与 content/metadata 响应契约不变。
+
+### 4. Validation & Error Matrix
+
+| 条件 | 行为 |
+|---|---|
+| 表单 API Key 为空但存储/环境变量存在 | 使用服务端已有密钥，不向浏览器返回密钥 |
+| 所有 API Key 来源均为空 | 返回 `缺少 AI 配置：AI_API_KEY` |
+| `/models` 返回非 2xx | 返回只包含 HTTP 状态码的中文错误，不读取/透传 body |
+| `/models` 返回无效 JSON | 返回 `模型列表返回的不是有效 JSON` |
+| JSON 缺少 `data` 数组 | 返回 `模型列表响应格式不兼容` |
+| `data` 中 ID 缺失、非字符串或空白 | 忽略该项，其他合法 ID 继续返回 |
+| 推理强度为空或非法 | 规范化为 `null`，请求不发送 `reasoning_effort` |
+| 上游不支持所选推理强度 | 保持既有生成 `502` 错误边界，管理员可切回默认 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：管理员用当前表单地址和新密钥拉取模型，选择候选并保存 `high`；生成请求发送 `reasoning_effort: "high"`。
+- Base：服务不支持模型枚举，页面显示安全错误并保留自定义模型名；推理强度为默认，生成请求不含该字段。
+- Bad：客户端直接请求供应商 `/models`、把已存 API key 传入 props，或因模型列表失败而清空/禁止保存手工模型名。
+
+### 6. Tests Required
+
+- 配置解析：合法/空/非法推理强度，以及表单覆盖 > 存储 > 环境变量的连接优先级。
+- 设置存储：`ai.reasoning_effort` 的保存、读取和清空，同时保持空 API key 不覆盖已有密钥。
+- 模型列表 helper：URL、method、headers、ID 规范化、HTTP/JSON/结构/网络错误与错误信息不泄密。
+- 生成请求：非空推理强度发送 `reasoning_effort`；默认值确认请求体不存在该键。
+- 浏览器回归：拉取失败不重置 Base URL、API Key 或自定义模型输入，控制台无 Base UI 语义错误。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+// 泄漏密钥到客户端，并把枚举成功错误地作为保存前提。
+fetch(`${baseUrl}/models`, { headers: { Authorization: `Bearer ${apiKey}` } });
+if (models.length === 0) disableSave();
+```
+
+#### Correct
+
+```ts
+const connection = resolveOpenAiCompatibleConnection(process.env, storedSettings, formInput);
+if (!connection.ok) return connection;
+return listOpenAiCompatibleModels(connection.connection); // 只返回 ID 或安全错误
+```
+
 ## 场景：模型导入生成的模型与 Token 元数据
 
 ### 1. Scope / Trigger

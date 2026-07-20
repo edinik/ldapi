@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
-import { disableTotp, confirmTotpSetup, generateTotpSetup, saveAiGenerationSettings } from "./actions";
+import { disableTotp, confirmTotpSetup, generateTotpSetup } from "./actions";
+import AiGenerationSettingsForm from "./AiGenerationSettingsForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -167,43 +168,12 @@ export default async function AdminSecurityPage({
               </p>
             </div>
 
-            <form action={saveAiGenerationSettings} className="space-y-4">
-              <Field>
-                <FieldLabel htmlFor="aiBaseUrl">Base URL</FieldLabel>
-                <Input
-                  id="aiBaseUrl"
-                  name="baseUrl"
-                  type="url"
-                  defaultValue={aiSettings.baseUrl || process.env.AI_BASE_URL || ""}
-                  placeholder="https://api.openai.com/v1"
-                />
-                <FieldDescription>留空时使用默认 OpenAI 地址或环境变量。</FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="aiModel">模型</FieldLabel>
-                <Input
-                  id="aiModel"
-                  name="model"
-                  defaultValue={aiSettings.model || process.env.AI_MODEL || ""}
-                  placeholder="gpt-4.1-mini"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="aiApiKey">API Key</FieldLabel>
-                <Input
-                  id="aiApiKey"
-                  name="apiKey"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder={configuredApiKey ? "留空则保留当前密钥" : "请输入 API Key"}
-                />
-                <FieldDescription>出于安全考虑，已保存的密钥不会明文显示。</FieldDescription>
-              </Field>
-
-              <Button type="submit">保存 AI 配置</Button>
-            </form>
+            <AiGenerationSettingsForm
+              initialBaseUrl={aiSettings.baseUrl || process.env.AI_BASE_URL || ""}
+              initialModel={aiSettings.model || process.env.AI_MODEL || ""}
+              initialReasoningEffort={aiSettings.reasoningEffort}
+              hasConfiguredApiKey={Boolean(configuredApiKey)}
+            />
           </CardContent>
         </Card>
       </div>

@@ -25,12 +25,14 @@ describe("AI settings store", () => {
       baseUrl: "https://api.example.com/v1",
       apiKey: "secret-key",
       model: "gpt-test",
+      reasoningEffort: "high",
     });
 
     assert.deepEqual(await getStoredAiSettings(database), {
       baseUrl: "https://api.example.com/v1",
       apiKey: "secret-key",
       model: "gpt-test",
+      reasoningEffort: "high",
     });
   });
 
@@ -41,17 +43,20 @@ describe("AI settings store", () => {
       baseUrl: "https://api.example.com/v1",
       apiKey: "secret-key",
       model: "gpt-test",
+      reasoningEffort: "high",
     });
     await saveAiSettings(database, {
       baseUrl: "https://api.other.com/v1",
       apiKey: null,
       model: "gpt-other",
+      reasoningEffort: null,
     });
 
     assert.deepEqual(await getStoredAiSettings(database), {
       baseUrl: "https://api.other.com/v1",
       apiKey: "secret-key",
       model: "gpt-other",
+      reasoningEffort: null,
     });
   });
 });

@@ -68,6 +68,7 @@ describe("AI model import helpers", () => {
         baseUrl: "https://api.example.com/v1",
         apiKey: "test-key",
         model: "gpt-test",
+        reasoningEffort: "high",
       },
       fetcher: async (url, init) => {
         requests.push({ url: String(url), init: init || {} });
@@ -116,6 +117,7 @@ describe("AI model import helpers", () => {
 
     const requestBody = JSON.parse(String(requests[0].init.body));
     assert.equal(requestBody.model, "gpt-test");
+    assert.equal(requestBody.reasoning_effort, "high");
     assert.equal(requestBody.stream, true);
     assert.deepEqual(requestBody.stream_options, { include_usage: true });
     assert.deepEqual(requestBody.tools, [
@@ -166,6 +168,37 @@ describe("AI model import helpers", () => {
         },
       });
     }
+  });
+
+  it("omits reasoning_effort when the provider default is selected", async () => {
+    let requestBody: Record<string, unknown> | null = null;
+    const result = await generateModelImportContent({
+      query: "OpenAI GPT-4.1",
+      template: createModelImportTemplate(),
+      today: "2026-07-03",
+      config: {
+        baseUrl: "https://api.example.com/v1",
+        apiKey: "test-key",
+        model: "gpt-test",
+        reasoningEffort: null,
+      },
+      fetcher: async (_url, init) => {
+        requestBody = JSON.parse(String(init?.body));
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: '{"models":[{"name":"GPT-4.1","developer":"openai"}]}',
+              },
+            },
+          ],
+        });
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(requestBody);
+    assert.equal(Object.prototype.hasOwnProperty.call(requestBody, "reasoning_effort"), false);
   });
 
   it("normalizes compatible usage fields and ignores invalid token values", async () => {

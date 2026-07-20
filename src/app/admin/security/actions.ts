@@ -2,8 +2,12 @@
 
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
-import { parseAiSettingsPayload } from "@/lib/ai-settings";
-import { saveAiSettings } from "@/lib/ai-settings-store";
+import { parseAiSettingsPayload, resolveOpenAiCompatibleConnection } from "@/lib/ai-settings";
+import { getStoredAiSettings, saveAiSettings } from "@/lib/ai-settings-store";
+import {
+  listOpenAiCompatibleModels,
+  type OpenAiCompatibleModelListResult,
+} from "@/lib/openai-compatible-models";
 import { requireAdmin } from "@/lib/session";
 import { generateTotpSecret, verifyTotpCode } from "@/lib/totp";
 import { eq } from "drizzle-orm";
@@ -63,7 +67,21 @@ export async function saveAiGenerationSettings(formData: FormData) {
     baseUrl: formData.get("baseUrl"),
     apiKey: formData.get("apiKey"),
     model: formData.get("model"),
+    reasoningEffort: formData.get("reasoningEffort"),
   }));
 
   redirect("/admin/security?success=ai-saved");
+}
+
+export async function fetchAiGenerationModels(formData: FormData): Promise<OpenAiCompatibleModelListResult> {
+  await requireAdmin();
+
+  const storedSettings = await getStoredAiSettings(db);
+  const connection = resolveOpenAiCompatibleConnection(process.env, storedSettings, {
+    baseUrl: formData.get("baseUrl"),
+    apiKey: formData.get("apiKey"),
+  });
+  if (!connection.ok) return connection;
+
+  return listOpenAiCompatibleModels(connection.connection);
 }

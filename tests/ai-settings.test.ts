@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   maskSecret,
   parseAiSettingsPayload,
+  resolveOpenAiCompatibleConnection,
   resolveOpenAiCompatibleConfig,
 } from "../src/lib/ai-settings";
 
@@ -18,13 +19,20 @@ describe("AI settings helpers", () => {
       baseUrl: " https://api.example.com/v1/ ",
       apiKey: "   ",
       model: " gpt-test ",
+      reasoningEffort: " high ",
     });
 
     assert.deepEqual(result, {
       baseUrl: "https://api.example.com/v1",
       apiKey: null,
       model: "gpt-test",
+      reasoningEffort: "high",
     });
+  });
+
+  it("normalizes unsupported or empty reasoning effort to the provider default", () => {
+    assert.equal(parseAiSettingsPayload({ reasoningEffort: "turbo" }).reasoningEffort, null);
+    assert.equal(parseAiSettingsPayload({ reasoningEffort: "" }).reasoningEffort, null);
   });
 
   it("resolves database settings before environment variables", () => {
@@ -38,6 +46,7 @@ describe("AI settings helpers", () => {
         baseUrl: "https://db.example.com/v1",
         apiKey: "db-key",
         model: "db-model",
+        reasoningEffort: "xhigh",
       },
     );
 
@@ -47,6 +56,7 @@ describe("AI settings helpers", () => {
         baseUrl: "https://db.example.com/v1",
         apiKey: "db-key",
         model: "db-model",
+        reasoningEffort: "xhigh",
       });
     }
   });
@@ -60,6 +70,7 @@ describe("AI settings helpers", () => {
         baseUrl: "https://db.example.com/v1",
         apiKey: null,
         model: "db-model",
+        reasoningEffort: null,
       },
     );
 
@@ -68,6 +79,34 @@ describe("AI settings helpers", () => {
       assert.equal(result.config.apiKey, "env-key");
       assert.equal(result.config.baseUrl, "https://db.example.com/v1");
       assert.equal(result.config.model, "db-model");
+      assert.equal(result.config.reasoningEffort, null);
     }
+  });
+
+  it("resolves submitted connection values before stored and environment settings", () => {
+    const result = resolveOpenAiCompatibleConnection(
+      {
+        AI_BASE_URL: "https://env.example.com/v1",
+        AI_API_KEY: "env-key",
+      },
+      {
+        baseUrl: "https://db.example.com/v1",
+        apiKey: "db-key",
+        model: "db-model",
+        reasoningEffort: null,
+      },
+      {
+        baseUrl: "https://form.example.com/v1/",
+        apiKey: "form-key",
+      },
+    );
+
+    assert.deepEqual(result, {
+      ok: true,
+      connection: {
+        baseUrl: "https://form.example.com/v1",
+        apiKey: "form-key",
+      },
+    });
   });
 });
