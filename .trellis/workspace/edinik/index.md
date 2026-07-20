@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
+- **Total Sessions**: 10
 - **Last Active**: 2026-07-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~314 | Active |
+| `journal-1.md` | ~348 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-07-20 | AI 生成资源信息 | `2765c07`, `938ead0` | `main` |
 | 9 | 2026-07-20 | 模型拉取与推理强度设置 | `6382379` | `main` |
 | 8 | 2026-07-20 | 修复筛选下拉框收起标签 | `b8d50f1` | `main` |
 | 7 | 2026-07-20 | 优化夜间模式模型图标对比度 | `798c6da` | `main` |

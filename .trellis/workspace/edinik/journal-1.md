@@ -312,3 +312,37 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: AI 生成资源信息
+
+**Date**: 2026-07-20
+**Task**: AI 生成资源信息
+**Branch**: `main`
+
+### Summary
+
+为新增工具资源加入 AI 研究与自动补全，支持一句话简介、候选标签、GitHub/官网/演示站回填、加载与错误反馈，并保持只填空字段和服务端密钥边界。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2765c07` | (see git log) |
+| `938ead0` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
