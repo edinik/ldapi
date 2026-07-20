@@ -195,6 +195,93 @@ usage = readUsage(payload) ?? usage;
 appendAssistantContent(payload); // 正文解析与 metadata 解析彼此独立
 ```
 
+## 场景：新增工具资源的 AI 资料生成
+
+### 1. Scope / Trigger
+
+- 修改 `POST /api/resources/generate`、`src/lib/resource-ai.ts`、`resource-ai-contract.ts` 或新增资源表单的 AI 回填行为时，必须保持本节契约。
+- 该能力只用于新增 `tool` 资源；教程和资源编辑页不应隐式获得生成入口。
+
+### 2. Signatures
+
+```ts
+type ResourceAiRequest = {
+  title: string;
+  githubUrl: string | null;
+  officialUrl: string | null;
+  existingTags: string[];
+};
+
+type ResourceAiSuggestion = {
+  description: string;
+  tags: string[];
+  githubUrl: string | null;
+  officialUrl: string | null;
+  demoUrl: string | null;
+};
+```
+
+- 浏览器请求为 `{ title, githubUrl?, officialUrl?, existingTags? }`。
+- 成功响应为 `{ suggestion: ResourceAiSuggestion }`；输入错误为 `400`，AI 配置错误为 `500`，上游或生成校验失败为 `502`。
+
+### 3. Contracts
+
+- 路由先调用 `requireAuth()`，再解析请求；AI 配置继续由 `getStoredAiSettings()` 和 `resolveOpenAiCompatibleConfig()` 统一解析。
+- Chat Completions 请求使用共享 `openAiResearchTools`、已配置模型及可选 `reasoning_effort`。有 GitHub/官网时提示 AI 优先核对这些来源，否则按标题研究。
+- 应用服务器不得直接抓取用户或 AI 提供的任意第三方 URL；网页访问交给已配置 AI 服务的研究工具，避免新增 SSRF 通道。
+- `resource-ai-contract.ts` 是客户端安全的请求/响应校验与合并所有者；`resource-ai.ts` 拥有上游请求和 SSE/JSON 解析。客户端组件不得导入服务端生成 helper。
+- 简介必须非空且不超过 240 字符；标签 trim、大小写不敏感去重、最多 6 个且至少 2 个。
+- GitHub 只接受 `github.com` HTTP(S) 地址；官网和演示站只接受 HTTP(S)，非法 AI 链接降级为 `null`。
+- 回填时重新读取响应到达时的表单值：只填空简介/链接；标签只作为未选中候选，用户点击后才加入。
+- 浏览器只获得规范化 suggestion 或安全中文错误，不得获得 API key、base URL、Authorization header 或供应商原始对象。
+
+### 4. Validation & Error Matrix
+
+| 条件 | 行为 |
+|---|---|
+| 标题为空或超过 200 字符 | `400`，不发起上游请求 |
+| 输入官网不是 HTTP(S)，或 GitHub 不是 `github.com` | `400`，指出对应字段 |
+| 未配置 AI key/model | `500`，返回统一配置错误 |
+| 上游非 2xx、网络失败、SSE/JSON 无正文 | `502`，只返回安全摘要 |
+| AI 简介为空/过长或有效标签少于 2 个 | `502`，不向表单回填任何内容 |
+| AI 链接协议或 GitHub host 非法 | 对应链接变为 `null`，其他有效建议仍可使用 |
+| 响应到达时字段已有用户值 | 保留用户值，只填仍为空的字段 |
+| 生成期间切换为教程或组件卸载 | 取消/忽略结果，不修改表单 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：管理员填标题和 GitHub，服务端用研究工具核对来源，返回有效简介/标签/链接；客户端只填空字段并展示候选标签。
+- Base：仅有标题，AI 找到简介和标签但无法确认链接；链接保持 `null`，用户仍可审阅生成内容。
+- Bad：客户端直接调用供应商、把 API key 放进 props，服务端主动 `fetch` 任意用户 URL，或 AI 响应覆盖用户等待期间填写的内容。
+
+### 6. Tests Required
+
+- 请求解析：标题、HTTP(S)、GitHub host、标签 trim/去重与错误文案。
+- 提示词/请求体：优先来源说明、共享研究工具、模型、stream 和可选 `reasoning_effort`。
+- 响应解析：普通 JSON、SSE、代码围栏、缺失正文、无效 JSON 和安全 HTTP 错误。
+- suggestion 校验：简介长度、标签数量/去重、GitHub/官网/演示站 URL 降级。
+- 合并：已有字段不覆盖、空字段填充、已有标签不重复、候选标签不自动选择。
+- 完整质量门还需证明服务端研究提示词不进入客户端静态包。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+// 把外部请求 helper 打进客户端，并直接覆盖用户输入。
+import { generateResourceAiSuggestion } from "@/lib/resource-ai";
+setDescription(suggestion.description);
+```
+
+#### Correct
+
+```ts
+import { mergeResourceAiSuggestion } from "@/lib/resource-ai-contract";
+
+const merged = mergeResourceAiSuggestion(readCurrentFormValues(), suggestion);
+applyOnly(merged.filledFields, merged.values);
+```
+
 ## 配置变更
 
 新增环境配置时，搜索并更新完整契约：解析器、`.env.example`、相关 Docker/Compose 传递、必要时的管理设置 UI、文档和测试。参考 `../guides/cross-layer-thinking-guide.md`。
