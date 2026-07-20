@@ -279,3 +279,36 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 模型拉取与推理强度设置
+
+**Date**: 2026-07-20
+**Task**: 模型拉取与推理强度设置
+**Branch**: `main`
+
+### Summary
+
+安全设置支持服务端拉取 OpenAI-compatible 模型并保留自由输入；新增推理强度持久化与 reasoning_effort 请求映射，补齐安全错误处理、自动化测试、规范和浏览器回归验证。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6382379` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
