@@ -19,3 +19,12 @@ If you're using Codex or another agent-capable tool, additional project-scoped h
 Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
 
 <!-- TRELLIS:END -->
+
+## Local Development Login
+
+The default credentials for the local development database are:
+
+- Username: `admin`
+- Password: `changeme`
+
+These credentials are for local development only. Do not reuse them in production or other shared environments.

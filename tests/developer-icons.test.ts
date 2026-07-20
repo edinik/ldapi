@@ -1,6 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { developerIconOptions, getDeveloperIconPath, getLobeIconUrl, lobeIconOptions, normalizeDeveloperName } from "../src/lib/developer-icons";
+import {
+  developerIconOptions,
+  getDeveloperIconPath,
+  getLobeIconUrl,
+  isLobeIconUrl,
+  lobeIconOptions,
+  normalizeDeveloperName,
+} from "../src/lib/developer-icons";
 
 describe("developer icon helpers", () => {
   it("normalizes developer names for stable icon lookup", () => {
@@ -26,5 +33,12 @@ describe("developer icon helpers", () => {
     assert.ok(lobeIconOptions.length > developerIconOptions.length);
     assert.ok(lobeIconOptions.some((option) => option.label === "claude"));
     assert.equal(getLobeIconUrl("openai"), "https://unpkg.com/@lobehub/icons-static-svg@latest/icons/openai.svg");
+  });
+
+  it("identifies theme-aware lobe-icons without matching custom images", () => {
+    assert.equal(isLobeIconUrl(getLobeIconUrl("openai")), true);
+    assert.equal(isLobeIconUrl("https://example.com/custom-logo.svg"), false);
+    assert.equal(isLobeIconUrl("https://example.com/custom-logo.png"), false);
+    assert.equal(isLobeIconUrl(null), false);
   });
 });

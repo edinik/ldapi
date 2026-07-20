@@ -24,7 +24,8 @@ import {
   type ModelCapabilityKey,
   type ModelDisplayItem,
 } from "@/lib/model-display";
-import { getDeveloperIconPath } from "@/lib/developer-icons";
+import { getDeveloperIconPath, isLobeIconUrl } from "@/lib/developer-icons";
+import { cn } from "@/lib/utils";
 
 const capabilityFilters: { key: ModelCapabilityKey; label: string }[] = [
   { key: "supportsToolCalling", label: "工具调用" },
@@ -52,7 +53,14 @@ function DeveloperIcon({ model }: { model: ModelDisplayItem }) {
     <span className="grid size-9 shrink-0 place-items-center text-sm font-black text-foreground">
       {isImageIcon(icon) ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={icon || ""} alt="" className="size-8 object-contain" />
+        <img
+          src={icon || ""}
+          alt=""
+          className={cn(
+            "size-8 object-contain",
+            isLobeIconUrl(icon) && "dark:brightness-0 dark:invert dark:opacity-80",
+          )}
+        />
       ) : (
         <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-muted">
           {getDeveloperIconText(model)}

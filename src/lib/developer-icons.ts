@@ -1,7 +1,13 @@
 import { lobeIconSlugs } from "@/lib/lobe-icon-slugs";
 
+const lobeIconBaseUrl = "https://unpkg.com/@lobehub/icons-static-svg@latest/icons/";
+
 export function getLobeIconUrl(slug: string) {
-  return `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
+  return `${lobeIconBaseUrl}${slug}.svg`;
+}
+
+export function isLobeIconUrl(icon: string | null | undefined) {
+  return !!icon && icon.startsWith(lobeIconBaseUrl) && icon.endsWith(".svg");
 }
 
 export const developerIconPaths: Record<string, string> = {
