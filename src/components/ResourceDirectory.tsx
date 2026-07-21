@@ -125,6 +125,7 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
   const [query, setQuery] = useState("");
   const [selectedType, setSelectedType] = useState<ResourceTypeFilter>("all");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagMultiple, setTagMultiple] = useState(true);
   const tagOptions = useMemo(() => getResourceTagOptions(resources), [resources]);
   const filteredResources = useMemo(
     () => filterResources(resources, { query, type: selectedType, tags: selectedTags }),
@@ -187,11 +188,31 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
 
           {tagOptions.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-foreground">标签</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-foreground">标签</p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 px-2 text-xs font-medium text-muted-foreground"
+                  onClick={() => {
+                    setTagMultiple((value) => !value);
+                    // 切到单选时只保留首个已选标签
+                    setSelectedTags((current) => current.slice(0, 1));
+                  }}
+                  aria-label={tagMultiple ? "切换为单选" : "切换为多选"}
+                  title={tagMultiple ? "切换为单选" : "切换为多选"}
+                >
+                  {tagMultiple ? "多选" : "单选"}
+                </Button>
+              </div>
               <ToggleGroup
-                multiple
+                multiple={tagMultiple}
                 value={selectedTags}
-                onValueChange={setSelectedTags}
+                onValueChange={(values) => {
+                  // 单选模式下只取最后一次点击的标签
+                  setSelectedTags(tagMultiple ? values : values.slice(-1));
+                }}
                 variant="outline"
                 spacing={2}
                 className="flex flex-wrap"
