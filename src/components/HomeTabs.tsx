@@ -26,13 +26,13 @@ export function HomeTabs({
         <TabsTrigger value="resources">资源 ({resources.length})</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="sites" className="pt-8">
+      <TabsContent value="sites" className="motion-tab-panel pt-8">
         <SiteDirectory sites={sites} />
       </TabsContent>
-      <TabsContent value="models" className="pt-8">
+      <TabsContent value="models" className="motion-tab-panel pt-8">
         <ModelOverview models={models} />
       </TabsContent>
-      <TabsContent value="resources" className="pt-8">
+      <TabsContent value="resources" className="motion-tab-panel pt-8">
         <ResourceDirectory resources={resources} />
       </TabsContent>
     </Tabs>

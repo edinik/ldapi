@@ -23,8 +23,16 @@ export function ThemeToggle() {
       title={label}
       onClick={toggleTheme}
     >
-      <Moon aria-hidden="true" className="dark:hidden" />
-      <Sun aria-hidden="true" className="hidden dark:block" />
+      <span className="relative size-4">
+        <Moon
+          aria-hidden="true"
+          className="absolute inset-0 size-4 transition-all duration-300 ease-in-out motion-reduce:transition-none dark:scale-0 dark:rotate-90 dark:opacity-0"
+        />
+        <Sun
+          aria-hidden="true"
+          className="absolute inset-0 size-4 scale-0 -rotate-90 opacity-0 transition-all duration-300 ease-in-out motion-reduce:transition-none dark:scale-100 dark:rotate-0 dark:opacity-100"
+        />
+      </span>
     </Button>
   );
 }

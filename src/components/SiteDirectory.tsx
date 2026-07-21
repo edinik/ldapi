@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { directoryCardClassName, directoryChipClassName } from "@/lib/motion";
+import { useDirectoryMotion } from "@/lib/use-directory-motion";
 import { type CapabilityKey, type DirectorySite, filterSites } from "@/lib/site-directory-filter";
 
 const capabilityLabels: { key: CapabilityKey; label: string; tone: string }[] = [
@@ -84,6 +86,13 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
     [query, selectedCapabilities, selectedModel, sites],
   );
 
+  const structuralKey = `${selectedCapabilities.join(",")}|${selectedModel}`;
+  const { gridRef, countRef } = useDirectoryMotion({
+    query,
+    structuralKey,
+    matchCount: filteredSites.length,
+  });
+
   const hasFilters = query.trim().length > 0 || selectedCapabilities.length > 0 || (selectedModel.length > 0 && selectedModel !== "all");
 
   function clearFilters() {
@@ -94,7 +103,7 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
 
   if (sites.length === 0) {
     return (
-      <Empty className="border border-dashed">
+      <Empty data-motion="empty" className="motion-empty border border-dashed">
         <EmptyHeader>
           <EmptyTitle className="text-3xl font-semibold tracking-tight">暂无站点数据</EmptyTitle>
           <EmptyDescription>登录后台后可以添加第一条公益站记录。</EmptyDescription>
@@ -159,7 +168,11 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
               className="flex flex-wrap"
             >
               {capabilityLabels.map(({ key, label }) => (
-                <ToggleGroupItem key={key} value={key} className="rounded-full px-3">
+                <ToggleGroupItem
+                  key={key}
+                  value={key}
+                  className={directoryChipClassName}
+                >
                   {label}
                 </ToggleGroupItem>
               ))}
@@ -168,10 +181,21 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <p className="text-sm text-muted-foreground">
-              匹配 <span className="font-semibold text-foreground">{filteredSites.length}</span> / {sites.length} 个站点
+              匹配{" "}
+              <span ref={countRef} data-motion="match-count" className="inline-block font-semibold text-foreground">
+                {filteredSites.length}
+              </span>{" "}
+              / {sites.length} 个站点
             </p>
             {hasFilters && (
-              <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-motion="clear-filters"
+                className="motion-clear-filters"
+                onClick={clearFilters}
+              >
                 清除筛选
               </Button>
             )}
@@ -180,7 +204,7 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
       </Card>
 
       {filteredSites.length === 0 ? (
-        <Empty className="border border-dashed">
+        <Empty data-motion="empty" className="motion-empty border border-dashed">
           <EmptyHeader>
             <EmptyTitle className="text-3xl font-semibold tracking-tight">没有找到匹配站点</EmptyTitle>
             <EmptyDescription>调整关键词、模型或能力筛选后再试。</EmptyDescription>
@@ -192,7 +216,7 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div ref={gridRef} data-motion="card-grid" className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredSites.map((site) => {
             const links: { label: string; url: string }[] = [
               { label: "站长主页", url: site.adminProfileUrl || "" },
@@ -203,7 +227,7 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
             ].filter((link) => link.url.length > 0);
 
             return (
-              <Card key={site.id} className="flex min-h-full flex-col">
+              <Card key={site.id} data-motion="card" className={directoryCardClassName}>
                 <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
                   <div className="min-w-0">
                     <CardTitle className="text-xl">

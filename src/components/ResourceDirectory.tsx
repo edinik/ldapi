@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { directoryCardClassName, directoryChipClassName, playCardGridEnter } from "@/lib/motion";
+import { useDirectoryMotion } from "@/lib/use-directory-motion";
 import {
   filterResources,
   getResourceTagOptions,
@@ -55,7 +57,7 @@ function ResourceLinks({ resource }: { resource: DirectoryResource }) {
 
 function ResourceCard({ resource }: { resource: DirectoryResource }) {
   return (
-    <Card className="flex min-h-full flex-col">
+    <Card data-motion="card" className={directoryCardClassName}>
       <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
         <div>
           <div className="mb-2">
@@ -101,7 +103,21 @@ function ResourceCard({ resource }: { resource: DirectoryResource }) {
   );
 }
 
-function ResourceSection({ title, resources }: { title: string; resources: DirectoryResource[] }) {
+function ResourceSection({
+  title,
+  resources,
+  playToken,
+}: {
+  title: string;
+  resources: DirectoryResource[];
+  playToken: string;
+}) {
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    playCardGridEnter(gridRef.current);
+  }, [playToken]);
+
   if (resources.length === 0) return null;
 
   return (
@@ -112,7 +128,7 @@ function ResourceSection({ title, resources }: { title: string; resources: Direc
           <p className="mt-1 text-sm text-muted-foreground">{resources.length} 条匹配资源</p>
         </div>
       </div>
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div ref={gridRef} data-motion="card-grid" className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {resources.map((resource) => (
           <ResourceCard key={resource.id} resource={resource} />
         ))}
@@ -133,6 +149,14 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
   );
   const toolResources = filteredResources.filter((resource) => resource.type === "tool");
   const tutorialResources = filteredResources.filter((resource) => resource.type === "tutorial");
+  const structuralKey = `${selectedType}|${selectedTags.join(",")}`;
+  const { countRef, animationKey } = useDirectoryMotion({
+    query,
+    structuralKey,
+    matchCount: filteredResources.length,
+    animateGrid: false,
+  });
+  const playToken = `${animationKey}|${filteredResources.length}`;
   const hasFilters = query.trim().length > 0 || selectedType !== "all" || selectedTags.length > 0;
 
   function clearFilters() {
@@ -143,7 +167,7 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
 
   if (resources.length === 0) {
     return (
-      <Empty className="border border-dashed">
+      <Empty data-motion="empty" className="motion-empty border border-dashed">
         <EmptyHeader>
           <EmptyTitle className="text-3xl font-semibold tracking-tight">暂无资源数据</EmptyTitle>
           <EmptyDescription>登录后台后可以添加工具项目或 LinuxDo 教程帖。</EmptyDescription>
@@ -179,7 +203,11 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
               className="flex flex-wrap"
             >
               {typeFilters.map((filter) => (
-                <ToggleGroupItem key={filter.value} value={filter.value} className="rounded-full px-3">
+                <ToggleGroupItem
+                  key={filter.value}
+                  value={filter.value}
+                  className={directoryChipClassName}
+                >
                   {filter.label}
                 </ToggleGroupItem>
               ))}
@@ -218,7 +246,11 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
                 className="flex flex-wrap"
               >
                 {tagOptions.map((tag) => (
-                  <ToggleGroupItem key={tag} value={tag} className="rounded-full px-3">
+                  <ToggleGroupItem
+                    key={tag}
+                    value={tag}
+                    className={directoryChipClassName}
+                  >
                     {tag}
                   </ToggleGroupItem>
                 ))}
@@ -228,10 +260,21 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <p className="text-sm text-muted-foreground">
-              匹配 <span className="font-semibold text-foreground">{filteredResources.length}</span> / {resources.length} 条资源
+              匹配{" "}
+              <span ref={countRef} data-motion="match-count" className="inline-block font-semibold text-foreground">
+                {filteredResources.length}
+              </span>{" "}
+              / {resources.length} 条资源
             </p>
             {hasFilters && (
-              <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-motion="clear-filters"
+                className="motion-clear-filters"
+                onClick={clearFilters}
+              >
                 清除筛选
               </Button>
             )}
@@ -240,7 +283,7 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
       </Card>
 
       {filteredResources.length === 0 ? (
-        <Empty className="border border-dashed">
+        <Empty data-motion="empty" className="motion-empty border border-dashed">
           <EmptyHeader>
             <EmptyTitle className="text-3xl font-semibold tracking-tight">没有找到匹配资源</EmptyTitle>
             <EmptyDescription>调整关键词、类型或标签筛选后再试。</EmptyDescription>
@@ -253,8 +296,12 @@ export function ResourceDirectory({ resources }: { resources: DirectoryResource[
         </Empty>
       ) : (
         <div className="space-y-10">
-          {selectedType !== "tutorial" && <ResourceSection title="工具项目" resources={toolResources} />}
-          {selectedType !== "tool" && <ResourceSection title="LinuxDo 教程" resources={tutorialResources} />}
+          {selectedType !== "tutorial" && (
+            <ResourceSection title="工具项目" resources={toolResources} playToken={playToken} />
+          )}
+          {selectedType !== "tool" && (
+            <ResourceSection title="LinuxDo 教程" resources={tutorialResources} playToken={playToken} />
+          )}
         </div>
       )}
     </div>

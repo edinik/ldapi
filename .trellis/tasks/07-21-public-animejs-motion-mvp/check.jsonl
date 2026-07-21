@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "质量检查清单与 check/build 要求"}
+{"file": ".trellis/spec/frontend/styling-and-accessibility.md", "reason": "核对 focus/aria/主题/禁止旧 ld-* 类"}
+{"file": ".trellis/spec/testing/index.md", "reason": "测试与验证规范入口"}
+{"file": ".trellis/tasks/07-21-public-animejs-motion-mvp/prd.md", "reason": "对照 AC1–AC8 验收"}
+{"file": ".trellis/tasks/07-21-public-animejs-motion-mvp/design.md", "reason": "对照实现是否偏离边界与回滚假设"}

@@ -25,6 +25,8 @@ import {
   type ModelDisplayItem,
 } from "@/lib/model-display";
 import { getDeveloperIconPath, isLobeIconUrl } from "@/lib/developer-icons";
+import { directoryCardClassName, directoryChipClassName } from "@/lib/motion";
+import { useDirectoryMotion } from "@/lib/use-directory-motion";
 import { cn } from "@/lib/utils";
 
 const capabilityFilters: { key: ModelCapabilityKey; label: string }[] = [
@@ -141,6 +143,13 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
     [developer, models, query, selectedCapabilities, sort],
   );
 
+  const structuralKey = `${developer}|${sort}|${selectedCapabilities.join(",")}`;
+  const { gridRef, countRef } = useDirectoryMotion({
+    query,
+    structuralKey,
+    matchCount: filteredModels.length,
+  });
+
   const hasFilters = query.trim().length > 0 || (developer.length > 0 && developer !== "all") || selectedCapabilities.length > 0;
 
   function clearFilters() {
@@ -181,7 +190,11 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
               className="flex flex-wrap"
             >
               {capabilityFilters.map(({ key, label }) => (
-                <ToggleGroupItem key={key} value={key} className="rounded-full px-3">
+                <ToggleGroupItem
+                  key={key}
+                  value={key}
+                  className={directoryChipClassName}
+                >
                   {label}
                 </ToggleGroupItem>
               ))}
@@ -190,10 +203,21 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <p className="text-sm text-muted-foreground">
-              匹配 <span className="font-semibold text-foreground">{filteredModels.length}</span> / {models.length} 个模型
+              匹配{" "}
+              <span ref={countRef} data-motion="match-count" className="inline-block font-semibold text-foreground">
+                {filteredModels.length}
+              </span>{" "}
+              / {models.length} 个模型
             </p>
             {hasFilters && (
-              <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-motion="clear-filters"
+                className="motion-clear-filters"
+                onClick={clearFilters}
+              >
                 清除筛选
               </Button>
             )}
@@ -202,7 +226,7 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
       </Card>
 
       {filteredModels.length === 0 ? (
-        <Empty className="border border-dashed">
+        <Empty data-motion="empty" className="motion-empty border border-dashed">
           <EmptyHeader>
             <EmptyTitle className="text-3xl font-semibold tracking-tight">没有找到匹配模型</EmptyTitle>
             <EmptyDescription>调整关键词、开发者或能力筛选后再试。</EmptyDescription>
@@ -214,14 +238,14 @@ export function ModelOverview({ models }: { models: ModelDisplayItem[] }) {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div ref={gridRef} data-motion="card-grid" className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredModels.map((model) => {
             const capabilities = getCapabilityLabels(model);
             const inputModalities = getInputModalityLabels(model);
             const outputModalities = getOutputModalityLabels(model);
 
             return (
-              <Card key={model.id} className="flex min-h-full flex-col">
+              <Card key={model.id} data-motion="card" className={directoryCardClassName}>
                 <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
                   <div className="flex min-w-0 items-start gap-3">
                     <DeveloperIcon model={model} />

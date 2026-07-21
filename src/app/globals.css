@@ -187,3 +187,74 @@
     cursor: not-allowed;
   }
 }
+
+/* Public directory motion tokens + micro-interactions */
+:root {
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 220ms;
+  --motion-duration-slow: 320ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes motion-tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motion-empty-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motion-clear-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.motion-tab-panel {
+  animation: motion-tab-in var(--motion-duration-normal) var(--motion-ease-out) both;
+}
+
+.motion-empty {
+  animation: motion-empty-in var(--motion-duration-normal) var(--motion-ease-out) both;
+}
+
+.motion-clear-filters {
+  animation: motion-clear-in 180ms var(--motion-ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-tab-panel,
+  .motion-empty,
+  .motion-clear-filters {
+    animation: none !important;
+  }
+
+  /* Keep public-directory micro-interactions near instantaneous. */
+  .motion-tab-panel,
+  .motion-empty,
+  .motion-clear-filters,
+  [data-motion="card"],
+  [data-motion="match-count"] {
+    transition: none !important;
+  }
+}

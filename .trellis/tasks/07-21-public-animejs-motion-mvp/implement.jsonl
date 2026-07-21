@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "前端开发前检查与质量门禁"}
+{"file": ".trellis/spec/frontend/styling-and-accessibility.md", "reason": "主题、样式 token、无障碍与可见 UI 约束"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "客户端组件边界与领域组件规范"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "若抽取 useCardGridEnter 等 hook 时对齐规范"}
+{"file": ".trellis/tasks/07-21-public-animejs-motion-mvp/design.md", "reason": "动效架构、motion API、debounce 与 cancel 策略"}
