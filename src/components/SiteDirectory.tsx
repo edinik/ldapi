@@ -62,6 +62,7 @@ function ratingVariant(rating: string): "default" | "secondary" | "destructive" 
 export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
   const [query, setQuery] = useState("");
   const [selectedCapabilities, setSelectedCapabilities] = useState<CapabilityKey[]>([]);
+  const [capabilityMultiple, setCapabilityMultiple] = useState(true);
   const [selectedModel, setSelectedModel] = useState("all");
 
   const modelOptions = useMemo(
@@ -126,11 +127,33 @@ export function SiteDirectory({ sites }: { sites: SiteDirectoryItem[] }) {
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-foreground">能力筛选</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-foreground">能力筛选</p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs font-medium text-muted-foreground"
+                onClick={() => {
+                  setCapabilityMultiple((value) => !value);
+                  // 切到单选时只保留首个已选能力
+                  setSelectedCapabilities((current) => current.slice(0, 1));
+                }}
+                aria-label={capabilityMultiple ? "切换为单选" : "切换为多选"}
+                title={capabilityMultiple ? "切换为单选" : "切换为多选"}
+              >
+                {capabilityMultiple ? "多选" : "单选"}
+              </Button>
+            </div>
             <ToggleGroup
-              multiple
+              multiple={capabilityMultiple}
               value={selectedCapabilities}
-              onValueChange={(values) => setSelectedCapabilities(values as CapabilityKey[])}
+              onValueChange={(values) => {
+                // 单选模式下只取最后一次点击的能力
+                setSelectedCapabilities(
+                  (capabilityMultiple ? values : values.slice(-1)) as CapabilityKey[],
+                );
+              }}
               variant="outline"
               spacing={2}
               className="flex flex-wrap"
