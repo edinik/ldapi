@@ -346,3 +346,36 @@ Initialized shadcn/ui (base-nova, neutral) and migrated public pages, admin list
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 公开目录 Anime.js 动效 MVP
+
+**Date**: 2026-07-22
+**Task**: 公开目录 Anime.js 动效 MVP
+**Branch**: `main`
+
+### Summary
+
+引入 animejs，为站点/模型/资源公开目录实现卡片筛选入场、匹配数 pulse、Tab crossfade、主题与 hover 微交互及 reduced-motion；完成 check/build 与提交。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ff00736` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
